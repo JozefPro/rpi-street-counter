@@ -102,13 +102,18 @@ class CameraReader:
                 self._frame = frame
 
             now = time.monotonic()
+            if next_encode_time == 0.0:
+                next_encode_time = now
+
             if now >= next_encode_time:
                 jpeg_frame = self._encode_frame(frame)
                 if jpeg_frame is not None:
                     with self._lock:
                         self._jpeg_frame = jpeg_frame
                     encoded_frames += 1
-                next_encode_time = now + stream_interval
+                next_encode_time += stream_interval
+                if next_encode_time < now:
+                    next_encode_time = now + stream_interval
 
             frames += 1
             elapsed = now - last_fps_time
