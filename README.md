@@ -76,6 +76,38 @@ http://<raspberry-pi-ip>:5000
 
 Edit `config.yaml` to change the camera index, resolution, target FPS, JPEG quality, host, port, or debug mode.
 
+## Deploy to Raspberry Pi
+
+The Raspberry Pi runs the actual app because the USB webcam is connected there. The Mac is used for development, GitHub, and deployment over SSH.
+
+Make the deploy script executable once:
+
+```bash
+chmod +x scripts/deploy_to_pi.sh
+```
+
+Deploy the latest committed code to the Raspberry Pi:
+
+```bash
+./scripts/deploy_to_pi.sh
+```
+
+Deploy and start the Flask app immediately:
+
+```bash
+./scripts/deploy_to_pi.sh --run
+```
+
+When the app is running, open it from a browser on the same LAN:
+
+```text
+http://<rpi-ip>:5000
+```
+
+If you started the app with `--run`, stop it in the terminal with `Ctrl+C`.
+
+The deploy script is intentionally conservative: it refuses to deploy if your local repo has uncommitted changes, pushes committed code to GitHub, clones the repo only if the remote directory does not exist, and otherwise updates the existing git checkout without deleting folders.
+
 ## Notes
 
 This milestone intentionally does not include YOLO, MobileNet, tracking, line crossing, benchmarking, nginx, Docker, Tailscale, or systemd. Those parts will be added later on top of this structure.
