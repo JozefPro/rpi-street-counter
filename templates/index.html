@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ project_name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <main class="dashboard">
+      <section class="card header-card">
+        <div>
+          <p class="eyebrow">Raspberry Pi 5</p>
+          <h1>{{ project_name }}</h1>
+        </div>
+        <div class="status-row">
+          <span>Model: <strong id="active-model">none</strong></span>
+          <span>Detection: <strong id="detection-status">off</strong></span>
+          <span>FPS: <strong id="fps">0.0</strong></span>
+        </div>
+      </section>
+
+      <section class="card video-card">
+        <div class="video-label">Live Video Stream</div>
+        <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Live street camera stream">
+        <p id="camera-error" class="camera-error" hidden></p>
+      </section>
+
+      <section class="card metrics-card">
+        <div class="metric">
+          <span>Cars Left</span>
+          <strong id="cars-left">0</strong>
+        </div>
+        <div class="metric">
+          <span>Cars Right</span>
+          <strong id="cars-right">0</strong>
+        </div>
+        <div class="metric">
+          <span>CPU</span>
+          <strong id="cpu">0%</strong>
+        </div>
+        <div class="metric">
+          <span>RAM</span>
+          <strong id="ram">0%</strong>
+        </div>
+        <div class="metric">
+          <span>Temp</span>
+          <strong id="temperature">n/a</strong>
+        </div>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
