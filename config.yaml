@@ -1,7 +1,9 @@
 camera:
   index: 0
-  width: 1920
-  height: 1080
+  # Balanced live-view profile for Raspberry Pi 5.
+  # 1920x1080 can be tested later for benchmarking, but MJPEG is CPU-heavy.
+  width: 1280
+  height: 720
   fps: 30
 
 server:
@@ -10,7 +12,8 @@ server:
   debug: false
 
 stream:
-  jpeg_quality: 80
+  jpeg_quality: 70
+  max_stream_fps: 15
 
 project:
   name: "RPI5 Street Counter"

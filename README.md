@@ -78,9 +78,9 @@ Edit `config.yaml` to change the camera index, resolution, target FPS, JPEG qual
 
 ## Camera resolution
 
-The default requested camera resolution is `1920x1080` at 30 FPS. The actual resolution depends on what the USB webcam and Linux driver support, so the status API and dashboard show the applied camera resolution after OpenCV opens the device.
+The default requested camera resolution is `1280x720` at 30 FPS with MJPEG output capped to 15 FPS at JPEG quality 70. This keeps the Flask live stream responsive on the Raspberry Pi while leaving CPU headroom for later detection work.
 
-If 1080p is too slow on the Raspberry Pi, lower `config.yaml` to `1280x720`.
+The actual resolution depends on what the USB webcam and Linux driver support, so the status API and dashboard show the applied camera resolution after OpenCV opens the device. `1920x1080` can be enabled later in `config.yaml` for benchmarking, but it is heavier and may stutter when streamed as MJPEG.
 
 ## Deploy to Raspberry Pi
 

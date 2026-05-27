@@ -8,20 +8,33 @@ import numpy as np
 class CameraReader:
     """Owns the webcam and continuously stores the latest frame."""
 
-    def __init__(self, index=0, width=1280, height=720, target_fps=30, jpeg_quality=80):
+    def __init__(
+        self,
+        index=0,
+        width=1280,
+        height=720,
+        target_fps=30,
+        jpeg_quality=70,
+        max_stream_fps=15,
+    ):
         self.index = index
         self.width = width
         self.height = height
         self.target_fps = target_fps
         self.jpeg_quality = jpeg_quality
+        self.max_stream_fps = max(1, int(max_stream_fps))
 
         self._capture = None
         self._frame = None
+        self._jpeg_frame = None
         self._lock = threading.Lock()
+        self._start_lock = threading.Lock()
         self._thread = None
         self._stop_event = threading.Event()
 
         self.fps = 0.0
+        self.camera_fps = 0.0
+        self.stream_fps = 0.0
         self.actual_width = None
         self.actual_height = None
         self.actual_camera_fps = None
@@ -29,12 +42,13 @@ class CameraReader:
         self.running = False
 
     def start(self):
-        if self._thread and self._thread.is_alive():
-            return
+        with self._start_lock:
+            if self._thread and self._thread.is_alive():
+                return
 
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._read_loop, daemon=True)
-        self._thread.start()
+            self._stop_event.clear()
+            self._thread = threading.Thread(target=self._read_loop, daemon=True)
+            self._thread.start()
 
     def stop(self):
         self._stop_event.set()
@@ -71,7 +85,10 @@ class CameraReader:
         self.error = None
         self.running = True
         frames = 0
+        encoded_frames = 0
         last_fps_time = time.monotonic()
+        next_encode_time = 0.0
+        stream_interval = 1.0 / self.max_stream_fps
 
         while not self._stop_event.is_set():
             ok, frame = self._capture.read()
@@ -84,12 +101,23 @@ class CameraReader:
             with self._lock:
                 self._frame = frame
 
-            frames += 1
             now = time.monotonic()
+            if now >= next_encode_time:
+                jpeg_frame = self._encode_frame(frame)
+                if jpeg_frame is not None:
+                    with self._lock:
+                        self._jpeg_frame = jpeg_frame
+                    encoded_frames += 1
+                next_encode_time = now + stream_interval
+
+            frames += 1
             elapsed = now - last_fps_time
             if elapsed >= 1.0:
-                self.fps = round(frames / elapsed, 1)
+                self.camera_fps = round(frames / elapsed, 1)
+                self.stream_fps = round(encoded_frames / elapsed, 1)
+                self.fps = self.stream_fps
                 frames = 0
+                encoded_frames = 0
                 last_fps_time = now
 
         self._capture.release()
@@ -102,16 +130,18 @@ class CameraReader:
             return self._frame.copy()
 
     def get_jpeg_frame(self):
-        frame = self.get_latest_frame()
-        if frame is None:
-            frame = self._placeholder_frame()
+        with self._lock:
+            if self._jpeg_frame is not None:
+                return self._jpeg_frame
 
+        return self._encode_frame(self._placeholder_frame())
+
+    def _encode_frame(self, frame):
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), int(self.jpeg_quality)]
         ok, buffer = cv2.imencode(".jpg", frame, encode_params)
         if not ok:
             self.error = "Could not encode camera frame as JPEG"
             return None
-
         return buffer.tobytes()
 
     def _placeholder_frame(self):

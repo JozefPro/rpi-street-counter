@@ -11,9 +11,9 @@ from src.system_stats import get_system_stats
 
 
 DEFAULT_CONFIG = {
-    "camera": {"index": 0, "width": 1920, "height": 1080, "fps": 30},
+    "camera": {"index": 0, "width": 1280, "height": 720, "fps": 30},
     "server": {"host": "0.0.0.0", "port": 5000, "debug": False},
-    "stream": {"jpeg_quality": 80},
+    "stream": {"jpeg_quality": 70, "max_stream_fps": 15},
     "project": {"name": "RPI5 Street Counter"},
 }
 
@@ -42,6 +42,7 @@ camera = CameraReader(
     height=config["camera"]["height"],
     target_fps=config["camera"]["fps"],
     jpeg_quality=config["stream"]["jpeg_quality"],
+    max_stream_fps=config["stream"]["max_stream_fps"],
 )
 
 app = Flask(__name__)
@@ -61,6 +62,8 @@ def index():
 
 
 def mjpeg_frames():
+    frame_interval = 1.0 / max(1, int(config["stream"]["max_stream_fps"]))
+
     while True:
         frame = camera.get_jpeg_frame()
         if frame is None:
@@ -71,7 +74,7 @@ def mjpeg_frames():
             b"--frame\r\n"
             b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
         )
-        time.sleep(0.001)
+        time.sleep(frame_interval)
 
 
 @app.route("/video_feed")
@@ -98,8 +101,11 @@ def api_status():
             "actual_width": camera.actual_width,
             "actual_height": camera.actual_height,
             "actual_camera_fps": camera.actual_camera_fps,
-            "measured_stream_fps": camera.fps,
-            "fps": camera.fps,
+            "measured_camera_fps": camera.camera_fps,
+            "measured_stream_fps": camera.stream_fps,
+            "stream_max_fps": camera.max_stream_fps,
+            "jpeg_quality": camera.jpeg_quality,
+            "fps": camera.stream_fps,
             "camera_running": camera.running,
         }
     )
@@ -112,4 +118,5 @@ if __name__ == "__main__":
         port=config["server"]["port"],
         debug=config["server"]["debug"],
         threaded=True,
+        use_reloader=False,
     )
