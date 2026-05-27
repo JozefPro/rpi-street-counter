@@ -16,17 +16,31 @@
         <div class="status-row">
           <span>Model: <strong id="active-model">none</strong></span>
           <span>Detection: <strong id="detection-status">off</strong></span>
-          <span>FPS: <strong id="fps">0.0</strong></span>
+          <span>FPS: <strong id="fps-summary">0.0</strong></span>
         </div>
       </section>
 
       <section class="card video-card">
         <div class="video-label">Live Video Stream</div>
-        <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Live street camera stream">
+        <div class="video-frame">
+          <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Live street camera stream">
+        </div>
         <p id="camera-error" class="camera-error" hidden></p>
       </section>
 
       <section class="card metrics-card">
+        <div class="metric">
+          <span>Requested</span>
+          <strong id="requested-resolution">1920x1080</strong>
+        </div>
+        <div class="metric">
+          <span>Actual Camera</span>
+          <strong id="actual-resolution">n/a</strong>
+        </div>
+        <div class="metric">
+          <span>Stream FPS</span>
+          <strong id="fps">0.0</strong>
+        </div>
         <div class="metric">
           <span>Cars Left</span>
           <strong id="cars-left">0</strong>

@@ -1,7 +1,10 @@
 const fields = {
   activeModel: document.getElementById("active-model"),
   detectionStatus: document.getElementById("detection-status"),
+  fpsSummary: document.getElementById("fps-summary"),
   fps: document.getElementById("fps"),
+  requestedResolution: document.getElementById("requested-resolution"),
+  actualResolution: document.getElementById("actual-resolution"),
   carsLeft: document.getElementById("cars-left"),
   carsRight: document.getElementById("cars-right"),
   cpu: document.getElementById("cpu"),
@@ -14,6 +17,21 @@ function formatNumber(value, fallback = "0") {
   return Number.isFinite(Number(value)) ? Number(value).toFixed(1) : fallback;
 }
 
+function formatResolution(width, height) {
+  const parsedWidth = Number(width);
+  const parsedHeight = Number(height);
+
+  if (!Number.isFinite(parsedWidth) || !Number.isFinite(parsedHeight)) {
+    return "n/a";
+  }
+
+  if (parsedWidth <= 0 || parsedHeight <= 0) {
+    return "n/a";
+  }
+
+  return `${Math.round(parsedWidth)}x${Math.round(parsedHeight)}`;
+}
+
 async function refreshStatus() {
   try {
     const response = await fetch("/api/status", { cache: "no-store" });
@@ -24,7 +42,17 @@ async function refreshStatus() {
     const status = await response.json();
     fields.activeModel.textContent = status.active_model || "none";
     fields.detectionStatus.textContent = status.detection_enabled ? "on" : "off";
-    fields.fps.textContent = formatNumber(status.fps);
+    const measuredFps = formatNumber(status.measured_stream_fps ?? status.fps);
+    fields.fpsSummary.textContent = measuredFps;
+    fields.fps.textContent = measuredFps;
+    fields.requestedResolution.textContent = formatResolution(
+      status.requested_width,
+      status.requested_height,
+    );
+    fields.actualResolution.textContent = formatResolution(
+      status.actual_width,
+      status.actual_height,
+    );
     fields.carsLeft.textContent = status.cars_left ?? 0;
     fields.carsRight.textContent = status.cars_right ?? 0;
     fields.cpu.textContent = `${formatNumber(status.cpu_percent)}%`;

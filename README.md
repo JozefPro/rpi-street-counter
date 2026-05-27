@@ -76,6 +76,12 @@ http://<raspberry-pi-ip>:5000
 
 Edit `config.yaml` to change the camera index, resolution, target FPS, JPEG quality, host, port, or debug mode.
 
+## Camera resolution
+
+The default requested camera resolution is `1920x1080` at 30 FPS. The actual resolution depends on what the USB webcam and Linux driver support, so the status API and dashboard show the applied camera resolution after OpenCV opens the device.
+
+If 1080p is too slow on the Raspberry Pi, lower `config.yaml` to `1280x720`.
+
 ## Deploy to Raspberry Pi
 
 The Raspberry Pi runs the actual app because the USB webcam is connected there. The Mac is used for development, GitHub, and deployment over SSH.

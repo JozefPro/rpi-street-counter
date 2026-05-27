@@ -22,6 +22,9 @@ class CameraReader:
         self._stop_event = threading.Event()
 
         self.fps = 0.0
+        self.actual_width = None
+        self.actual_height = None
+        self.actual_camera_fps = None
         self.error = None
         self.running = False
 
@@ -43,6 +46,7 @@ class CameraReader:
 
     def _read_loop(self):
         self._capture = cv2.VideoCapture(self.index)
+        self._capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
         self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self._capture.set(cv2.CAP_PROP_FPS, self.target_fps)
@@ -52,6 +56,17 @@ class CameraReader:
             self._capture.release()
             self.running = False
             return
+
+        self.actual_width = int(self._capture.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+        self.actual_height = int(self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+        self.actual_camera_fps = round(self._capture.get(cv2.CAP_PROP_FPS) or 0, 1)
+        print(
+            "Camera requested: "
+            f"{self.width}x{self.height} at {self.target_fps} FPS; "
+            "actual: "
+            f"{self.actual_width}x{self.actual_height} at {self.actual_camera_fps} FPS",
+            flush=True,
+        )
 
         self.error = None
         self.running = True

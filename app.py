@@ -11,7 +11,7 @@ from src.system_stats import get_system_stats
 
 
 DEFAULT_CONFIG = {
-    "camera": {"index": 0, "width": 1280, "height": 720, "fps": 30},
+    "camera": {"index": 0, "width": 1920, "height": 1080, "fps": 30},
     "server": {"host": "0.0.0.0", "port": 5000, "debug": False},
     "stream": {"jpeg_quality": 80},
     "project": {"name": "RPI5 Street Counter"},
@@ -92,6 +92,13 @@ def api_status():
         {
             **state,
             **stats,
+            "requested_width": camera.width,
+            "requested_height": camera.height,
+            "requested_fps": camera.target_fps,
+            "actual_width": camera.actual_width,
+            "actual_height": camera.actual_height,
+            "actual_camera_fps": camera.actual_camera_fps,
+            "measured_stream_fps": camera.fps,
             "fps": camera.fps,
             "camera_running": camera.running,
         }
