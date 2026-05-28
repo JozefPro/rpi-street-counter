@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
         "confidence_threshold": 0.35,
         "classes": ["car", "truck", "bus", "motorcycle"],
         "run_every_n_frames": 3,
-        "input_size": 320,
+        "input_size": 640,
     },
     "models": {
         "yolo_nano": {
