@@ -57,6 +57,11 @@ class CameraReader:
         self._thread = None
         self._stop_event = threading.Event()
         self._last_debug_log_time = 0.0
+        self._consecutive_read_failures = 0
+        self._reconnect_attempts = 0
+        self._last_frame_time = None
+        self._read_failure_threshold = 3
+        self._reconnect_delay_seconds = 1.0
 
         self.fps = 0.0
         self.camera_fps = 0.0
@@ -108,6 +113,20 @@ class CameraReader:
         self.error = None
         self.running = False
 
+    @property
+    def consecutive_read_failures(self):
+        return self._consecutive_read_failures
+
+    @property
+    def reconnect_attempts(self):
+        return self._reconnect_attempts
+
+    @property
+    def last_frame_age_seconds(self):
+        if self._last_frame_time is None:
+            return None
+        return round(time.monotonic() - self._last_frame_time, 1)
+
     def start(self):
         with self._start_lock:
             if self._thread and self._thread.is_alive():
@@ -125,36 +144,68 @@ class CameraReader:
             self._capture.release()
         self.running = False
 
-    def _read_loop(self):
-        self._capture = cv2.VideoCapture(self.index)
-        self._capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-        self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
-        self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
-        self._capture.set(cv2.CAP_PROP_FPS, self.target_fps)
-
-        if not self._capture.isOpened():
-            self.error = f"Could not open camera index {self.index}"
-            self._capture.release()
-            self.running = False
-            return
-
-        self.actual_width = int(self._capture.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
-        self.actual_height = int(self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
-        self.actual_camera_fps = round(self._capture.get(cv2.CAP_PROP_FPS) or 0, 1)
+    def _open_capture(self):
+        self._release_capture()
         print(
-            "Camera requested: "
-            f"{self.width}x{self.height} at {self.target_fps} FPS; "
-            "actual: "
-            f"{self.actual_width}x{self.actual_height} at {self.actual_camera_fps} FPS; "
-            f"model: {self.active_model} ({self.model_backend}); "
-            "inference target: "
-            f"{self.inference_width}x{self.inference_height}; "
-            f"stream max: {self.max_stream_fps} FPS",
+            "Opening camera: "
+            f"index={self.index} requested={self.width}x{self.height}@{self.target_fps}",
             flush=True,
         )
+        capture = cv2.VideoCapture(self.index, cv2.CAP_V4L2)
+        capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+        capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
+        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
+        capture.set(cv2.CAP_PROP_FPS, self.target_fps)
+        capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
+        if not capture.isOpened():
+            self.error = f"Could not open camera index {self.index}"
+            capture.release()
+            self.running = False
+            print(self.error, flush=True)
+            return False
+
+        self._capture = capture
+        self.actual_width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+        self.actual_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+        self.actual_camera_fps = round(capture.get(cv2.CAP_PROP_FPS) or 0, 1)
+        self._consecutive_read_failures = 0
         self.error = None
         self.running = True
+        print(
+            "Camera opened: "
+            f"index={self.index} requested={self.width}x{self.height}@{self.target_fps} "
+            f"actual={self.actual_width}x{self.actual_height}@{self.actual_camera_fps} "
+            f"model={self.active_model} ({self.model_backend}) "
+            f"inference={self.inference_width}x{self.inference_height} "
+            f"stream_max={self.max_stream_fps}",
+            flush=True,
+        )
+        return True
+
+    def _release_capture(self):
+        if self._capture is not None:
+            self._capture.release()
+            self._capture = None
+
+    def _reconnect_capture(self):
+        self._reconnect_attempts += 1
+        print(
+            "Reconnecting camera after repeated read failures: "
+            f"attempt={self._reconnect_attempts} "
+            f"failures={self._consecutive_read_failures} "
+            f"last_frame_id={self.latest_frame_id}",
+            flush=True,
+        )
+        self.running = False
+        self._release_capture()
+        time.sleep(self._reconnect_delay_seconds)
+        return self._open_capture()
+
+    def _read_loop(self):
+        if not self._open_capture():
+            return
+
         frames = 0
         encoded_frames = 0
         frame_number = 0
@@ -163,15 +214,28 @@ class CameraReader:
         stream_interval = 1.0 / self.max_stream_fps
 
         while not self._stop_event.is_set():
-            ok, frame = self._capture.read()
-            if not ok:
-                self.error = "Camera frame read failed"
-                time.sleep(0.1)
+            if self._capture is None or not self._capture.isOpened():
+                self.error = f"Camera index {self.index} is not open; retrying"
+                self._reconnect_capture()
                 continue
 
+            ok, frame = self._capture.read()
+            if not ok:
+                self._handle_read_failure()
+                if self._consecutive_read_failures >= self._read_failure_threshold:
+                    self._reconnect_capture()
+                continue
+
+            if self._consecutive_read_failures:
+                print(
+                    f"Camera recovered after {self._consecutive_read_failures} failed reads",
+                    flush=True,
+                )
+            self._consecutive_read_failures = 0
             self.error = None
             frame_number += 1
             now = time.monotonic()
+            self._last_frame_time = now
             self._store_frame(frame_number, now, frame)
 
             if self.detection_enabled and frame_number % self.detection_run_every_n_frames == 0:
@@ -201,8 +265,24 @@ class CameraReader:
                 encoded_frames = 0
                 last_fps_time = now
 
-        self._capture.release()
+        self._release_capture()
         self.running = False
+
+    def _handle_read_failure(self):
+        self._consecutive_read_failures += 1
+        if self._consecutive_read_failures >= self._read_failure_threshold:
+            self.error = (
+                "Camera frame read failed; attempting reconnect "
+                f"after {self._consecutive_read_failures} consecutive failures"
+            )
+        if self._consecutive_read_failures == 1 or self._consecutive_read_failures % self._read_failure_threshold == 0:
+            print(
+                "Camera frame read failed: "
+                f"consecutive_failures={self._consecutive_read_failures} "
+                f"last_frame_id={self.latest_frame_id} "
+                f"reconnect_attempts={self._reconnect_attempts}",
+                flush=True,
+            )
 
     def get_latest_frame(self):
         with self._lock:
