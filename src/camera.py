@@ -203,7 +203,19 @@ class CameraReader:
         return self._open_capture()
 
     def _read_loop(self):
-        if not self._open_capture():
+        while not self._stop_event.is_set() and not self._open_capture():
+            self._reconnect_attempts += 1
+            print(
+                "Camera open failed; retrying: "
+                f"attempt={self._reconnect_attempts} "
+                f"index={self.index}",
+                flush=True,
+            )
+            time.sleep(self._reconnect_delay_seconds)
+
+        if self._stop_event.is_set():
+            self._release_capture()
+            self.running = False
             return
 
         frames = 0
