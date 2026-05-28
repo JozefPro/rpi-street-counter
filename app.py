@@ -15,13 +15,15 @@ from src.tracking.line_counter import LineCounter
 DEFAULT_CONFIG = {
     "camera": {"index": 0, "width": 1280, "height": 720, "fps": 30},
     "server": {"host": "0.0.0.0", "port": 5000, "debug": False},
-    "stream": {"jpeg_quality": 70, "max_stream_fps": 15, "delay_frames": 4},
+    "stream": {"jpeg_quality": 70, "max_stream_fps": 30, "delay_frames": 4},
     "detection": {
         "enabled": True,
         "model": "yolo_nano",
         "confidence_threshold": 0.35,
         "classes": ["car", "truck", "bus", "motorcycle"],
         "run_every_n_frames": 3,
+        "inference_width": 640,
+        "inference_height": 360,
         "input_size": 640,
     },
     "models": {
@@ -102,6 +104,8 @@ camera = CameraReader(
     detector=detector,
     detection_enabled=config["detection"]["enabled"],
     detection_run_every_n_frames=config["detection"]["run_every_n_frames"],
+    detection_inference_width=config["detection"].get("inference_width"),
+    detection_inference_height=config["detection"].get("inference_height"),
     line_counter=line_counter,
     counter_window_seconds=config["counting"].get("counter_window_seconds", 300),
 )
@@ -178,6 +182,11 @@ def api_status():
             "detection_enabled": camera.detection_enabled,
             "active_model": camera.active_model,
             "inference_ms": camera.inference_ms,
+            "inference_width": camera.inference_width,
+            "inference_height": camera.inference_height,
+            "inference_frame_width": camera.inference_frame_width,
+            "inference_frame_height": camera.inference_frame_height,
+            "detection_run_every_n_frames": camera.detection_run_every_n_frames,
             "detection_fps": camera.detection_fps,
             "vehicle_detections_count": camera.vehicle_detections_count,
             "boxes_drawn_count": camera.boxes_drawn_count,

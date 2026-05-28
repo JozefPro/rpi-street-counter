@@ -82,7 +82,7 @@ Edit `config.yaml` to change the camera index, resolution, target FPS, JPEG qual
 
 ## Camera resolution
 
-The default requested camera resolution is `1280x720` at 30 FPS with MJPEG output capped to 15 FPS at JPEG quality 70. This keeps the Flask live stream responsive on the Raspberry Pi while leaving CPU headroom for later detection work.
+The default requested camera resolution is `1280x720` at 30 FPS with MJPEG output allowed up to 30 FPS at JPEG quality 70. This keeps the camera running at its full live-view rate while still allowing the stream FPS to fall naturally if the Raspberry Pi cannot encode every frame.
 
 The actual resolution depends on what the USB webcam and Linux driver support, so the status API and dashboard show the applied camera resolution after OpenCV opens the device. `1920x1080` can be enabled later in `config.yaml` for benchmarking, but it is heavier and may stutter when streamed as MJPEG.
 
@@ -108,13 +108,22 @@ detection:
 
 Model selection happens in `src/detection/factory.py`. The default lightweight implementation is in `src/detection/opencv_dnn.py` and runs a YOLOv8 nano ONNX model through OpenCV DNN, avoiding a PyTorch runtime on the Raspberry Pi.
 
-The default YOLO model is `yolov5n.onnx`, run every 3 camera frames at input size 640. The model file is downloaded on first use to `models/yolov5n.onnx`. It detects road vehicle classes configured under `detection.classes`.
+The default YOLO model is `yolov5n.onnx`, run every 3 camera frames. The full camera frame stays at `1280x720`, but detection runs on a resized inference copy configured with:
+
+```yaml
+detection:
+  inference_width: 640
+  inference_height: 360
+  run_every_n_frames: 3
+```
+
+Detections from the smaller inference frame are scaled back to the original camera frame before drawing boxes, tracking centers, and checking counting-line crossings. The model file is downloaded on first use to `models/yolov5n.onnx`. It detects road vehicle classes configured under `detection.classes`.
 
 If the Raspberry Pi becomes slow, reduce:
 
 - camera resolution in `config.yaml`
 - `stream.jpeg_quality`
-- `detection.input_size`
+- `detection.inference_width` and `detection.inference_height`
 - detection frequency by increasing `detection.run_every_n_frames`
 
 ## Stream delay / detection sync

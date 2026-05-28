@@ -20,6 +20,7 @@ const fields = {
   waitingSecondLine: document.getElementById("waiting-second-line"),
   lineCrossings: document.getElementById("line-crossings"),
   inferenceMs: document.getElementById("inference-ms"),
+  inferenceSize: document.getElementById("inference-size"),
   detectionFps: document.getElementById("detection-fps"),
   detectionFrameId: document.getElementById("detection-frame-id"),
   boxesDrawnCount: document.getElementById("boxes-drawn-count"),
@@ -111,6 +112,10 @@ async function refreshStatus() {
       status.inference_ms === null || status.inference_ms === undefined
         ? "n/a"
         : `${formatNumber(status.inference_ms)} ms`;
+    fields.inferenceSize.textContent = formatResolution(
+      status.inference_frame_width ?? status.inference_width,
+      status.inference_frame_height ?? status.inference_height,
+    );
     fields.detectionFps.textContent = formatNumber(status.detection_fps);
     fields.detectionFrameId.textContent = status.detection_frame_id ?? "n/a";
     fields.boxesDrawnCount.textContent = status.boxes_drawn_count ?? 0;

@@ -28,14 +28,17 @@ class OpenCVDnnYoloDetector(BaseDetector):
 
     enabled = True
 
-    def __init__(self, name, weights, model_url, confidence_threshold, class_names, input_size):
+    def __init__(self, name, weights, model_url, confidence_threshold, class_names, input_size, input_width=None, input_height=None):
         self.name = name
         self.weights = Path(weights)
         self.model_url = model_url
         self.confidence_threshold = confidence_threshold
         self.class_names = set(class_names)
         self.input_size = int(input_size)
+        self.input_width = int(input_width or input_size)
+        self.input_height = int(input_height or input_size)
         self._net = None
+        self._shape_fallback_logged = False
 
     def _load_model(self):
         if self._net is not None:
@@ -57,15 +60,30 @@ class OpenCVDnnYoloDetector(BaseDetector):
         self._load_model()
 
         frame_height, frame_width = frame.shape[:2]
-        blob = cv2.dnn.blobFromImage(
-            frame,
-            scalefactor=1 / 255.0,
-            size=(self.input_size, self.input_size),
-            swapRB=True,
-            crop=False,
-        )
+        blob = self._make_blob(frame, self.input_width, self.input_height)
         self._net.setInput(blob)
-        output = self._net.forward()
+        try:
+            output = self._net.forward()
+            model_input_width = self.input_width
+            model_input_height = self.input_height
+        except cv2.error:
+            if self.input_width == self.input_size and self.input_height == self.input_size:
+                raise
+
+            if not self._shape_fallback_logged:
+                print(
+                    "OpenCV DNN model rejected configured inference shape "
+                    f"{self.input_width}x{self.input_height}; "
+                    f"falling back to {self.input_size}x{self.input_size}",
+                    flush=True,
+                )
+                self._shape_fallback_logged = True
+
+            blob = self._make_blob(frame, self.input_size, self.input_size)
+            self._net.setInput(blob)
+            output = self._net.forward()
+            model_input_width = self.input_size
+            model_input_height = self.input_size
 
         raw_predictions = np.squeeze(output)
         if len(raw_predictions.shape) != 2:
@@ -79,8 +97,8 @@ class OpenCVDnnYoloDetector(BaseDetector):
         confidences = []
         class_ids = []
 
-        x_scale = frame_width / self.input_size
-        y_scale = frame_height / self.input_size
+        x_scale = frame_width / model_input_width
+        y_scale = frame_height / model_input_height
 
         for prediction in predictions:
             if len(prediction) >= 85:
@@ -134,3 +152,12 @@ class OpenCVDnnYoloDetector(BaseDetector):
             )
 
         return detections
+
+    def _make_blob(self, frame, input_width, input_height):
+        return cv2.dnn.blobFromImage(
+            frame,
+            scalefactor=1 / 255.0,
+            size=(input_width, input_height),
+            swapRB=True,
+            crop=False,
+        )

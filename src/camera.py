@@ -22,6 +22,8 @@ class CameraReader:
         detector=None,
         detection_enabled=False,
         detection_run_every_n_frames=3,
+        detection_inference_width=None,
+        detection_inference_height=None,
         line_counter=None,
         counter_window_seconds=300,
     ):
@@ -36,6 +38,8 @@ class CameraReader:
         self.detector = detector
         self.detection_enabled = bool(detection_enabled and detector and detector.enabled)
         self.detection_run_every_n_frames = max(1, int(detection_run_every_n_frames))
+        self.inference_width = int(detection_inference_width or width)
+        self.inference_height = int(detection_inference_height or height)
         self.line_counter = line_counter
         self.counting_enabled = bool(line_counter and line_counter.enabled)
         self.counter_window_seconds = max(1, int(counter_window_seconds))
@@ -65,6 +69,8 @@ class CameraReader:
         self.detection_frame_id = None
         self.active_model = detector.name if detector else "none"
         self.inference_ms = None
+        self.inference_frame_width = None
+        self.inference_frame_height = None
         self.detection_fps = 0.0
         self.vehicle_detections_count = 0
         self.boxes_drawn_count = 0
@@ -134,7 +140,10 @@ class CameraReader:
             "Camera requested: "
             f"{self.width}x{self.height} at {self.target_fps} FPS; "
             "actual: "
-            f"{self.actual_width}x{self.actual_height} at {self.actual_camera_fps} FPS",
+            f"{self.actual_width}x{self.actual_height} at {self.actual_camera_fps} FPS; "
+            "inference target: "
+            f"{self.inference_width}x{self.inference_height}; "
+            f"stream max: {self.max_stream_fps} FPS",
             flush=True,
         )
 
@@ -277,8 +286,10 @@ class CameraReader:
 
     def _run_detection(self, frame_id, frame):
         started_at = time.monotonic()
+        original_height, original_width = frame.shape[:2]
+        inference_frame = self._resize_for_inference(frame)
         try:
-            detections = self.detector.detect(frame)
+            inference_detections = self.detector.detect(inference_frame)
         except Exception as exc:
             self.detection_error = str(exc)
             print(f"Detection error: {exc}", flush=True)
@@ -287,6 +298,13 @@ class CameraReader:
             return
 
         elapsed_ms = (time.monotonic() - started_at) * 1000
+        detections = self._scale_detections_to_original(
+            inference_detections,
+            inference_frame.shape[1],
+            inference_frame.shape[0],
+            original_width,
+            original_height,
+        )
         counter_state = self._update_counter(frame, detections)
         annotated_frame = self._draw_detections(frame, detections)
         annotated_frame = self._draw_counting_lines(annotated_frame)
@@ -298,6 +316,8 @@ class CameraReader:
                     break
 
         self.inference_ms = round(elapsed_ms, 1)
+        self.inference_frame_width = inference_frame.shape[1]
+        self.inference_frame_height = inference_frame.shape[0]
         self.vehicle_detections_count = len(detections)
         self.detection_frame_id = frame_id
         self.detection_error = None
@@ -305,6 +325,37 @@ class CameraReader:
         with self._detection_lock:
             self._completed_detections += 1
             self._detection_busy = False
+
+    def _resize_for_inference(self, frame):
+        frame_height, frame_width = frame.shape[:2]
+        target_width = max(1, int(self.inference_width or frame_width))
+        target_height = max(1, int(self.inference_height or frame_height))
+
+        if target_width == frame_width and target_height == frame_height:
+            return frame
+
+        return cv2.resize(frame, (target_width, target_height), interpolation=cv2.INTER_AREA)
+
+    def _scale_detections_to_original(self, detections, inference_width, inference_height, original_width, original_height):
+        if inference_width == original_width and inference_height == original_height:
+            return detections
+
+        x_scale = original_width / max(1, inference_width)
+        y_scale = original_height / max(1, inference_height)
+        scaled = []
+
+        for detection in detections:
+            x1, y1, x2, y2 = detection["bbox"]
+            scaled_detection = dict(detection)
+            scaled_detection["bbox"] = [
+                max(0, min(original_width - 1, int(round(x1 * x_scale)))),
+                max(0, min(original_height - 1, int(round(y1 * y_scale)))),
+                max(0, min(original_width - 1, int(round(x2 * x_scale)))),
+                max(0, min(original_height - 1, int(round(y2 * y_scale)))),
+            ]
+            scaled.append(scaled_detection)
+
+        return scaled
 
     def _draw_detections(self, frame, detections):
         annotated = frame.copy()
@@ -445,7 +496,11 @@ class CameraReader:
             f"delay_frames={self.delay_frames} "
             f"stream_uses_annotated_frame={selected['uses_annotated_frame']} "
             f"detections={self.vehicle_detections_count} "
-            f"boxes_drawn={selected['boxes_drawn_count']}",
+            f"boxes_drawn={selected['boxes_drawn_count']} "
+            f"camera_fps={self.camera_fps} "
+            f"stream_fps={self.stream_fps} "
+            f"inference={self.inference_frame_width}x{self.inference_frame_height} "
+            f"inference_ms={self.inference_ms}",
             flush=True,
         )
 

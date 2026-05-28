@@ -13,7 +13,7 @@ server:
 
 stream:
   jpeg_quality: 70
-  max_stream_fps: 15
+  max_stream_fps: 30
   delay_frames: 4
 
 detection:
@@ -26,6 +26,8 @@ detection:
     - bus
     - motorcycle
   run_every_n_frames: 3
+  inference_width: 640
+  inference_height: 360
   input_size: 640
 
 counting:

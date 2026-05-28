@@ -30,6 +30,8 @@ def create_detector(config):
             confidence_threshold=detection_config.get("confidence_threshold", 0.35),
             class_names=detection_config.get("classes", []),
             input_size=detection_config.get("input_size", 320),
+            input_width=detection_config.get("inference_width"),
+            input_height=detection_config.get("inference_height"),
         )
 
     if model_type == "ultralytics":
