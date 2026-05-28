@@ -14,7 +14,7 @@ from src.system_stats import get_system_stats
 DEFAULT_CONFIG = {
     "camera": {"index": 0, "width": 1280, "height": 720, "fps": 30},
     "server": {"host": "0.0.0.0", "port": 5000, "debug": False},
-    "stream": {"jpeg_quality": 70, "max_stream_fps": 15},
+    "stream": {"jpeg_quality": 70, "max_stream_fps": 15, "delay_frames": 4},
     "detection": {
         "enabled": True,
         "model": "yolo_nano",
@@ -60,6 +60,7 @@ camera = CameraReader(
     target_fps=config["camera"]["fps"],
     jpeg_quality=config["stream"]["jpeg_quality"],
     max_stream_fps=config["stream"]["max_stream_fps"],
+    delay_frames=config["stream"].get("delay_frames", 0),
     detector=detector,
     detection_enabled=config["detection"]["enabled"],
     detection_run_every_n_frames=config["detection"]["run_every_n_frames"],
@@ -124,6 +125,11 @@ def api_status():
             "measured_camera_fps": camera.camera_fps,
             "measured_stream_fps": camera.stream_fps,
             "stream_max_fps": camera.max_stream_fps,
+            "stream_delay_frames": camera.delay_frames,
+            "latest_frame_id": camera.latest_frame_id,
+            "streamed_frame_id": camera.streamed_frame_id,
+            "detection_frame_id": camera.detection_frame_id,
+            "frame_buffer_size": camera.frame_buffer_size,
             "jpeg_quality": camera.jpeg_quality,
             "fps": camera.stream_fps,
             "camera_running": camera.running,

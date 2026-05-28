@@ -12,6 +12,11 @@ const fields = {
   visibleVehicles: document.getElementById("visible-vehicles"),
   inferenceMs: document.getElementById("inference-ms"),
   detectionFps: document.getElementById("detection-fps"),
+  detectionFrameId: document.getElementById("detection-frame-id"),
+  streamDelay: document.getElementById("stream-delay"),
+  latestFrameId: document.getElementById("latest-frame-id"),
+  streamedFrameId: document.getElementById("streamed-frame-id"),
+  frameBufferSize: document.getElementById("frame-buffer-size"),
   detectionErrorCard: document.getElementById("detection-error-card"),
   detectionError: document.getElementById("detection-error"),
   cpu: document.getElementById("cpu"),
@@ -71,6 +76,11 @@ async function refreshStatus() {
         ? "n/a"
         : `${formatNumber(status.inference_ms)} ms`;
     fields.detectionFps.textContent = formatNumber(status.detection_fps);
+    fields.detectionFrameId.textContent = status.detection_frame_id ?? "n/a";
+    fields.streamDelay.textContent = `${status.stream_delay_frames ?? 0} frames`;
+    fields.latestFrameId.textContent = status.latest_frame_id ?? "n/a";
+    fields.streamedFrameId.textContent = status.streamed_frame_id ?? "n/a";
+    fields.frameBufferSize.textContent = status.frame_buffer_size ?? "n/a";
     fields.cpu.textContent = `${formatNumber(status.cpu_percent)}%`;
     fields.ram.textContent = `${formatNumber(status.ram_percent)}%`;
     fields.temperature.textContent =

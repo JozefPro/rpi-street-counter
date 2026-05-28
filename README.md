@@ -116,6 +116,19 @@ If the Raspberry Pi becomes slow, reduce:
 - `detection.input_size`
 - detection frequency by increasing `detection.run_every_n_frames`
 
+## Stream delay / detection sync
+
+Object detection takes time, so boxes can look slightly out of sync with the newest camera frame. The stream keeps a short frame buffer and can display a frame a few camera frames behind the latest frame so detection overlays line up better.
+
+Configure the delay in `config.yaml`:
+
+```yaml
+stream:
+  delay_frames: 4
+```
+
+`delay_frames: 0` streams the newest buffered frame. Start with `4`; if boxes appear ahead or behind the video, try `0`, `2`, `4`, `6`, or `8`. Higher delay can improve sync but adds visible latency.
+
 ## Deploy to Raspberry Pi
 
 The Raspberry Pi runs the actual app because the USB webcam is connected there. The Mac is used for development, GitHub, and deployment over SSH.

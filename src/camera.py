@@ -1,3 +1,4 @@
+from collections import deque
 import threading
 import time
 
@@ -16,6 +17,7 @@ class CameraReader:
         target_fps=30,
         jpeg_quality=70,
         max_stream_fps=15,
+        delay_frames=0,
         detector=None,
         detection_enabled=False,
         detection_run_every_n_frames=3,
@@ -26,6 +28,8 @@ class CameraReader:
         self.target_fps = target_fps
         self.jpeg_quality = jpeg_quality
         self.max_stream_fps = max(1, int(max_stream_fps))
+        self.delay_frames = max(0, int(delay_frames))
+        self.frame_buffer_size = max(self.delay_frames + 10, 30)
         self.detector = detector
         self.detection_enabled = bool(detection_enabled and detector and detector.enabled)
         self.detection_run_every_n_frames = max(1, int(detection_run_every_n_frames))
@@ -33,7 +37,7 @@ class CameraReader:
         self._capture = None
         self._frame = None
         self._jpeg_frame = None
-        self._detections = []
+        self._frame_buffer = deque(maxlen=self.frame_buffer_size)
         self._lock = threading.Lock()
         self._detection_lock = threading.Lock()
         self._detection_busy = False
@@ -48,6 +52,9 @@ class CameraReader:
         self.actual_width = None
         self.actual_height = None
         self.actual_camera_fps = None
+        self.latest_frame_id = 0
+        self.streamed_frame_id = None
+        self.detection_frame_id = None
         self.active_model = detector.name if detector else "none"
         self.inference_ms = None
         self.detection_fps = 0.0
@@ -114,23 +121,18 @@ class CameraReader:
                 continue
 
             self.error = None
-            with self._lock:
-                self._frame = frame
-
             frame_number += 1
-            if self.detection_enabled and frame_number % self.detection_run_every_n_frames == 0:
-                self._start_detection(frame.copy())
-
             now = time.monotonic()
+            self._store_frame(frame_number, now, frame)
+
+            if self.detection_enabled and frame_number % self.detection_run_every_n_frames == 0:
+                self._start_detection(frame_number, frame.copy())
+
             if next_encode_time == 0.0:
                 next_encode_time = now
 
             if now >= next_encode_time:
-                jpeg_frame = self._encode_frame(self._draw_detections(frame))
-                if jpeg_frame is not None:
-                    with self._lock:
-                        self._jpeg_frame = jpeg_frame
-                    encoded_frames += 1
+                encoded_frames += self._cache_delayed_jpeg_frame()
                 next_encode_time += stream_interval
                 if next_encode_time < now:
                     next_encode_time = now + stream_interval
@@ -166,16 +168,57 @@ class CameraReader:
 
         return self._encode_frame(self._placeholder_frame())
 
-    def _start_detection(self, frame):
+    def _store_frame(self, frame_id, timestamp, frame):
+        with self._lock:
+            self._frame = frame
+            self.latest_frame_id = frame_id
+            self._frame_buffer.append(
+                {
+                    "frame_id": frame_id,
+                    "timestamp": timestamp,
+                    "raw_frame": frame.copy(),
+                    "annotated_frame": None,
+                    "detections": [],
+                }
+            )
+
+    def _select_stream_frame(self):
+        with self._lock:
+            if not self._frame_buffer:
+                return None
+
+            # delay_frames is applied here. 0 streams the newest buffered frame.
+            index = max(0, len(self._frame_buffer) - 1 - self.delay_frames)
+            entry = self._frame_buffer[index]
+            frame = entry["annotated_frame"]
+            if frame is None:
+                frame = entry["raw_frame"]
+            self.streamed_frame_id = entry["frame_id"]
+            return frame.copy()
+
+    def _cache_delayed_jpeg_frame(self):
+        frame = self._select_stream_frame()
+        if frame is None:
+            return 0
+
+        jpeg_frame = self._encode_frame(frame)
+        if jpeg_frame is None:
+            return 0
+
+        with self._lock:
+            self._jpeg_frame = jpeg_frame
+        return 1
+
+    def _start_detection(self, frame_id, frame):
         with self._detection_lock:
             if self._detection_busy:
                 return
             self._detection_busy = True
 
-        thread = threading.Thread(target=self._run_detection, args=(frame,), daemon=True)
+        thread = threading.Thread(target=self._run_detection, args=(frame_id, frame), daemon=True)
         thread.start()
 
-    def _run_detection(self, frame):
+    def _run_detection(self, frame_id, frame):
         started_at = time.monotonic()
         try:
             detections = self.detector.detect(frame)
@@ -187,20 +230,23 @@ class CameraReader:
             return
 
         elapsed_ms = (time.monotonic() - started_at) * 1000
+        annotated_frame = self._draw_detections(frame, detections)
         with self._lock:
-            self._detections = detections
+            for entry in self._frame_buffer:
+                if entry["frame_id"] == frame_id:
+                    entry["detections"] = detections
+                    entry["annotated_frame"] = annotated_frame
+                    break
 
         self.inference_ms = round(elapsed_ms, 1)
         self.vehicle_detections_count = len(detections)
+        self.detection_frame_id = frame_id
         self.detection_error = None
         with self._detection_lock:
             self._completed_detections += 1
             self._detection_busy = False
 
-    def _draw_detections(self, frame):
-        with self._lock:
-            detections = list(self._detections)
-
+    def _draw_detections(self, frame, detections):
         if not detections:
             return frame
 
