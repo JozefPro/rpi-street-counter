@@ -11,7 +11,10 @@ const fields = {
   carsRight: document.getElementById("cars-right"),
   visibleVehicles: document.getElementById("visible-vehicles"),
   totalCounted: document.getElementById("total-counted"),
+  realtimeTotalCounted: document.getElementById("realtime-total-counted"),
   latestCrossingEvent: document.getElementById("latest-crossing-event"),
+  countLastUpdated: document.getElementById("count-last-updated"),
+  countNextUpdate: document.getElementById("count-next-update"),
   waitingSecondLine: document.getElementById("waiting-second-line"),
   lineCrossings: document.getElementById("line-crossings"),
   inferenceMs: document.getElementById("inference-ms"),
@@ -52,6 +55,18 @@ function formatResolution(width, height) {
   return `${Math.round(parsedWidth)}x${Math.round(parsedHeight)}`;
 }
 
+function formatDuration(seconds) {
+  const parsedSeconds = Number(seconds);
+  if (!Number.isFinite(parsedSeconds)) {
+    return "--:--";
+  }
+
+  const totalSeconds = Math.max(0, Math.floor(parsedSeconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+}
+
 async function refreshStatus() {
   try {
     const response = await fetch("/api/status", { cache: "no-store" });
@@ -76,11 +91,14 @@ async function refreshStatus() {
       status.actual_width,
       status.actual_height,
     );
-    fields.carsLeft.textContent = status.cars_left ?? 0;
-    fields.carsRight.textContent = status.cars_right ?? 0;
+    fields.carsLeft.textContent = status.displayed_cars_left ?? status.cars_left ?? 0;
+    fields.carsRight.textContent = status.displayed_cars_right ?? status.cars_right ?? 0;
     fields.visibleVehicles.textContent = status.vehicle_detections_count ?? 0;
-    fields.totalCounted.textContent = status.total_counted ?? 0;
+    fields.totalCounted.textContent = status.displayed_total_counted ?? status.total_counted ?? 0;
+    fields.realtimeTotalCounted.textContent = status.total_counted ?? 0;
     fields.latestCrossingEvent.textContent = status.latest_crossing_event || "none";
+    fields.countLastUpdated.textContent = status.count_last_updated_at_text || "Not updated yet";
+    fields.countNextUpdate.textContent = formatDuration(status.count_seconds_until_next_update);
     fields.waitingSecondLine.textContent = status.tracks_waiting_for_second_line ?? 0;
     fields.lineCrossings.textContent =
       `${status.line_a_crossings_seen ?? 0} / ${status.line_b_crossings_seen ?? 0}`;

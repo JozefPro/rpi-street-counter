@@ -1,4 +1,5 @@
 from collections import deque
+from datetime import datetime
 import threading
 import time
 
@@ -22,6 +23,7 @@ class CameraReader:
         detection_enabled=False,
         detection_run_every_n_frames=3,
         line_counter=None,
+        count_display_update_interval_seconds=300,
     ):
         self.index = index
         self.width = width
@@ -36,6 +38,7 @@ class CameraReader:
         self.detection_run_every_n_frames = max(1, int(detection_run_every_n_frames))
         self.line_counter = line_counter
         self.counting_enabled = bool(line_counter and line_counter.enabled)
+        self.display_update_interval_seconds = max(1, int(count_display_update_interval_seconds))
 
         self._capture = None
         self._frame = None
@@ -43,6 +46,7 @@ class CameraReader:
         self._frame_buffer = deque(maxlen=self.frame_buffer_size)
         self._lock = threading.Lock()
         self._detection_lock = threading.Lock()
+        self._count_snapshot_lock = threading.Lock()
         self._detection_busy = False
         self._completed_detections = 0
         self._start_lock = threading.Lock()
@@ -69,6 +73,12 @@ class CameraReader:
         self.cars_left = 0
         self.cars_right = 0
         self.total_counted = 0
+        now = time.time()
+        self.displayed_cars_left = self.cars_left
+        self.displayed_cars_right = self.cars_right
+        self.displayed_total_counted = self.total_counted
+        self.count_last_updated_at = now
+        self.count_next_update_at = now + self.display_update_interval_seconds
         self.active_tracks = 0
         self.latest_crossing_event = None
         self.line_a_crossings_seen = 0
@@ -336,6 +346,41 @@ class CameraReader:
         self.tracks_waiting_for_second_line = state["tracks_waiting_for_second_line"]
         self.track_id_switches = state["track_id_switches"]
         self.counted_classes = state["counted_classes"]
+        self._update_count_display_snapshot_if_due()
+
+    def get_count_display_status(self):
+        self._update_count_display_snapshot_if_due()
+        with self._count_snapshot_lock:
+            seconds_until_next = max(0, int(round(self.count_next_update_at - time.time())))
+            return {
+                "displayed_cars_left": self.displayed_cars_left,
+                "displayed_cars_right": self.displayed_cars_right,
+                "displayed_total_counted": self.displayed_total_counted,
+                "count_last_updated_at": self.count_last_updated_at,
+                "count_last_updated_at_text": self._format_timestamp(self.count_last_updated_at),
+                "count_next_update_at": self.count_next_update_at,
+                "count_next_update_at_text": self._format_timestamp(self.count_next_update_at),
+                "count_seconds_until_next_update": seconds_until_next,
+                "display_update_interval_seconds": self.display_update_interval_seconds,
+            }
+
+    def _update_count_display_snapshot_if_due(self):
+        now = time.time()
+        with self._count_snapshot_lock:
+            if now < self.count_next_update_at:
+                return
+
+            self.displayed_cars_left = self.cars_left
+            self.displayed_cars_right = self.cars_right
+            self.displayed_total_counted = self.total_counted
+            self.count_last_updated_at = now
+            self.count_next_update_at = now + self.display_update_interval_seconds
+
+    def _format_timestamp(self, timestamp):
+        if not timestamp:
+            return None
+
+        return datetime.fromtimestamp(timestamp).strftime("%Y-%m-%d %H:%M:%S")
 
     def _draw_counting_lines(self, frame):
         if not self.line_counter:

@@ -54,6 +54,7 @@ counting:
   sequence_a_then_b: "left"
   sequence_b_then_a: "right"
   max_track_age_seconds: 6.0
+  display_update_interval_seconds: 300
 
 tracking:
   max_distance_px: 190
