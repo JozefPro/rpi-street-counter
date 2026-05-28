@@ -45,6 +45,7 @@ class CameraReader:
         self._start_lock = threading.Lock()
         self._thread = None
         self._stop_event = threading.Event()
+        self._last_debug_log_time = 0.0
 
         self.fps = 0.0
         self.camera_fps = 0.0
@@ -59,6 +60,8 @@ class CameraReader:
         self.inference_ms = None
         self.detection_fps = 0.0
         self.vehicle_detections_count = 0
+        self.boxes_drawn_count = 0
+        self.stream_uses_annotated_frame = False
         self.detection_error = None
         self.error = None
         self.running = False
@@ -132,7 +135,7 @@ class CameraReader:
                 next_encode_time = now
 
             if now >= next_encode_time:
-                encoded_frames += self._cache_delayed_jpeg_frame()
+                encoded_frames += self._cache_delayed_jpeg_frame(now)
                 next_encode_time += stream_interval
                 if next_encode_time < now:
                     next_encode_time = now + stream_interval
@@ -189,24 +192,44 @@ class CameraReader:
 
             # delay_frames is applied here. 0 streams the newest buffered frame.
             index = max(0, len(self._frame_buffer) - 1 - self.delay_frames)
-            entry = self._frame_buffer[index]
-            frame = entry["annotated_frame"]
-            if frame is None:
-                frame = entry["raw_frame"]
-            self.streamed_frame_id = entry["frame_id"]
-            return frame.copy()
+            target_entry = self._frame_buffer[index]
+            selected_entry = target_entry
+            uses_annotated_frame = False
 
-    def _cache_delayed_jpeg_frame(self):
-        frame = self._select_stream_frame()
-        if frame is None:
+            if target_entry["annotated_frame"] is not None:
+                uses_annotated_frame = True
+            else:
+                for entry in reversed(list(self._frame_buffer)[: index + 1]):
+                    if entry["annotated_frame"] is not None:
+                        selected_entry = entry
+                        uses_annotated_frame = True
+                        break
+
+            frame = selected_entry["annotated_frame"] if uses_annotated_frame else selected_entry["raw_frame"]
+            self.streamed_frame_id = selected_entry["frame_id"]
+            self.stream_uses_annotated_frame = uses_annotated_frame
+            self.boxes_drawn_count = len(selected_entry["detections"]) if uses_annotated_frame else 0
+            return {
+                "frame": frame.copy(),
+                "selected_frame_id": selected_entry["frame_id"],
+                "target_frame_id": target_entry["frame_id"],
+                "uses_annotated_frame": uses_annotated_frame,
+                "boxes_drawn_count": self.boxes_drawn_count,
+            }
+
+    def _cache_delayed_jpeg_frame(self, now):
+        selected = self._select_stream_frame()
+        if selected is None:
             return 0
 
-        jpeg_frame = self._encode_frame(frame)
+        jpeg_frame = self._encode_frame(selected["frame"])
         if jpeg_frame is None:
             return 0
 
         with self._lock:
             self._jpeg_frame = jpeg_frame
+
+        self._maybe_log_sync(now, selected)
         return 1
 
     def _start_detection(self, frame_id, frame):
@@ -270,6 +293,24 @@ class CameraReader:
             )
 
         return annotated
+
+    def _maybe_log_sync(self, now, selected):
+        if now - self._last_debug_log_time < 1.0:
+            return
+
+        self._last_debug_log_time = now
+        print(
+            "Stream sync: "
+            f"latest_frame_id={self.latest_frame_id} "
+            f"detection_frame_id={self.detection_frame_id} "
+            f"target_frame_id={selected['target_frame_id']} "
+            f"streamed_frame_id={selected['selected_frame_id']} "
+            f"delay_frames={self.delay_frames} "
+            f"stream_uses_annotated_frame={selected['uses_annotated_frame']} "
+            f"detections={self.vehicle_detections_count} "
+            f"boxes_drawn={selected['boxes_drawn_count']}",
+            flush=True,
+        )
 
     def _encode_frame(self, frame):
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), int(self.jpeg_quality)]

@@ -13,6 +13,8 @@ const fields = {
   inferenceMs: document.getElementById("inference-ms"),
   detectionFps: document.getElementById("detection-fps"),
   detectionFrameId: document.getElementById("detection-frame-id"),
+  boxesDrawnCount: document.getElementById("boxes-drawn-count"),
+  annotatedStream: document.getElementById("annotated-stream"),
   streamDelay: document.getElementById("stream-delay"),
   latestFrameId: document.getElementById("latest-frame-id"),
   streamedFrameId: document.getElementById("streamed-frame-id"),
@@ -77,6 +79,8 @@ async function refreshStatus() {
         : `${formatNumber(status.inference_ms)} ms`;
     fields.detectionFps.textContent = formatNumber(status.detection_fps);
     fields.detectionFrameId.textContent = status.detection_frame_id ?? "n/a";
+    fields.boxesDrawnCount.textContent = status.boxes_drawn_count ?? 0;
+    fields.annotatedStream.textContent = status.stream_uses_annotated_frame ? "yes" : "no";
     fields.streamDelay.textContent = `${status.stream_delay_frames ?? 0} frames`;
     fields.latestFrameId.textContent = status.latest_frame_id ?? "n/a";
     fields.streamedFrameId.textContent = status.streamed_frame_id ?? "n/a";

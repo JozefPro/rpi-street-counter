@@ -138,6 +138,8 @@ def api_status():
             "inference_ms": camera.inference_ms,
             "detection_fps": camera.detection_fps,
             "vehicle_detections_count": camera.vehicle_detections_count,
+            "boxes_drawn_count": camera.boxes_drawn_count,
+            "stream_uses_annotated_frame": camera.stream_uses_annotated_frame,
             "detection_error": camera.detection_error,
         }
     )
