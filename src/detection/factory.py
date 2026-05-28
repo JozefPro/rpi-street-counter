@@ -25,6 +25,8 @@ def create_detector(config):
 
         return OpenCVDnnYoloDetector(
             name=model_name,
+            display_name=model_config.get("display_name", model_name),
+            backend=model_config.get("backend", "OpenCV DNN / ONNX"),
             weights=model_config["weights"],
             model_url=model_config.get("url"),
             confidence_threshold=detection_config.get("confidence_threshold", 0.35),
@@ -32,6 +34,7 @@ def create_detector(config):
             input_size=detection_config.get("input_size", 320),
             input_width=detection_config.get("inference_width"),
             input_height=detection_config.get("inference_height"),
+            fixed_input_size=model_config.get("fixed_input_size", False),
         )
 
     if model_type == "ultralytics":

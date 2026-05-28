@@ -24,21 +24,38 @@ COCO_CLASS_NAMES = [
 
 
 class OpenCVDnnYoloDetector(BaseDetector):
-    """YOLOv8 ONNX detector using OpenCV DNN, avoiding a PyTorch dependency."""
+    """YOLOv5 ONNX detector using OpenCV DNN, avoiding a PyTorch dependency."""
 
     enabled = True
 
-    def __init__(self, name, weights, model_url, confidence_threshold, class_names, input_size, input_width=None, input_height=None):
+    def __init__(
+        self,
+        name,
+        display_name,
+        backend,
+        weights,
+        model_url,
+        confidence_threshold,
+        class_names,
+        input_size,
+        input_width=None,
+        input_height=None,
+        fixed_input_size=False,
+    ):
         self.name = name
+        self.display_name = display_name
+        self.backend = backend
         self.weights = Path(weights)
+        self.model_path = str(self.weights)
         self.model_url = model_url
         self.confidence_threshold = confidence_threshold
         self.class_names = set(class_names)
         self.input_size = int(input_size)
         self.input_width = int(input_width or input_size)
         self.input_height = int(input_height or input_size)
-        self.effective_input_width = self.input_width
-        self.effective_input_height = self.input_height
+        self.fixed_input_size = bool(fixed_input_size)
+        self.effective_input_width = self.input_size if self.fixed_input_size else self.input_width
+        self.effective_input_height = self.input_size if self.fixed_input_size else self.input_height
         self._net = None
         self._shape_fallback_logged = False
 
@@ -50,10 +67,18 @@ class OpenCVDnnYoloDetector(BaseDetector):
             if not self.model_url:
                 raise FileNotFoundError(f"Detector weights not found: {self.weights}")
             self.weights.parent.mkdir(parents=True, exist_ok=True)
-            print(f"Downloading detector model {self.name} to {self.weights}", flush=True)
+            print(f"Downloading {self.display_name} model to {self.weights}...", flush=True)
             urlretrieve(self.model_url, self.weights)
+        else:
+            print(f"Using local model: {self.weights}", flush=True)
 
-        print(f"Loading OpenCV DNN detector {self.name} from {self.weights}", flush=True)
+        print(f"Loading {self.display_name} with {self.backend} from {self.weights}", flush=True)
+        if self.fixed_input_size:
+            print(
+                f"{self.display_name} ONNX uses fixed model input "
+                f"{self.input_size}x{self.input_size}",
+                flush=True,
+            )
         self._net = cv2.dnn.readNetFromONNX(str(self.weights))
         self._net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
         self._net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)

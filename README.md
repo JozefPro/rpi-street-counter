@@ -9,7 +9,7 @@ Current milestone:
 - MJPEG live stream at `/video_feed`.
 - JSON status endpoint at `/api/status`.
 - Dark dashboard with video, car counters, detection status, and Raspberry Pi stats.
-- Optional YOLO nano vehicle detection for drawing bounding boxes.
+- Optional YOLOv5n vehicle detection for drawing bounding boxes.
 - Diagonal A/B line counting for vehicles that cross both configured lines.
 
 ## Project Structure
@@ -98,7 +98,7 @@ detection:
   model: "none"
 ```
 
-To enable YOLO nano:
+To enable YOLOv5n:
 
 ```yaml
 detection:
@@ -106,18 +106,22 @@ detection:
   model: "yolo_nano"
 ```
 
-Model selection happens in `src/detection/factory.py`. The default lightweight implementation is in `src/detection/opencv_dnn.py` and runs a YOLOv8 nano ONNX model through OpenCV DNN, avoiding a PyTorch runtime on the Raspberry Pi.
+Model selection happens in `src/detection/factory.py`. The default lightweight implementation is in `src/detection/opencv_dnn.py` and runs the YOLOv5n ONNX model through OpenCV DNN, avoiding a PyTorch runtime on the Raspberry Pi.
 
-The default YOLO model is `yolov5n.onnx`, run every 3 camera frames. The full camera frame stays at `1280x720`, but detection runs on a resized inference copy configured with:
+The default model is YOLOv5n from `models/yolov5n.onnx`, run through OpenCV DNN / ONNX every 3 camera frames. The app logs `Using local model: models/yolov5n.onnx` when the file already exists. If it is missing, the app downloads it once from the configured URL and then reuses the local file.
+
+The full camera frame stays at `1280x720`, but detection runs on a resized inference copy configured with:
 
 ```yaml
 detection:
   inference_width: 640
-  inference_height: 384
+  inference_height: 360
   run_every_n_frames: 3
 ```
 
-Detections from the smaller inference frame are scaled back to the original camera frame before drawing boxes, tracking centers, and checking counting-line crossings. The model file is downloaded on first use to `models/yolov5n.onnx`. It detects road vehicle classes configured under `detection.classes`.
+Detections from the smaller inference frame are scaled back to the original camera frame before drawing boxes, tracking centers, and checking counting-line crossings. It detects road vehicle classes configured under `detection.classes`.
+
+The bundled YOLOv5n ONNX file has a fixed `640x640` model input. The dashboard therefore shows both values: the resized frame used for detection preprocessing (`640x360`) and the effective model input (`640x640`).
 
 If the Raspberry Pi becomes slow, reduce:
 

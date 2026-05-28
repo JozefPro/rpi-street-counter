@@ -23,14 +23,17 @@ DEFAULT_CONFIG = {
         "classes": ["car", "truck", "bus", "motorcycle"],
         "run_every_n_frames": 3,
         "inference_width": 640,
-        "inference_height": 384,
+        "inference_height": 360,
         "input_size": 640,
     },
     "models": {
         "yolo_nano": {
             "type": "opencv_dnn_yolo",
+            "display_name": "YOLOv5n",
+            "backend": "OpenCV DNN / ONNX",
             "weights": "models/yolov5n.onnx",
             "url": "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx",
+            "fixed_input_size": True,
         },
     },
     "counting": {
@@ -181,6 +184,9 @@ def api_status():
             "camera_running": camera.running,
             "detection_enabled": camera.detection_enabled,
             "active_model": camera.active_model,
+            "model_key": camera.model_key,
+            "model_backend": camera.model_backend,
+            "model_path": camera.model_path,
             "inference_ms": camera.inference_ms,
             "inference_width": camera.inference_width,
             "inference_height": camera.inference_height,

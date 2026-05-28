@@ -1,6 +1,8 @@
 const fields = {
   activeModel: document.getElementById("active-model"),
   activeModelCard: document.getElementById("active-model-card"),
+  topInferenceSize: document.getElementById("top-inference-size"),
+  modelBackend: document.getElementById("model-backend"),
   detectionStatus: document.getElementById("detection-status"),
   detectionCardStatus: document.getElementById("detection-card-status"),
   fpsSummary: document.getElementById("fps-summary"),
@@ -80,6 +82,7 @@ async function refreshStatus() {
     const status = await response.json();
     fields.activeModel.textContent = status.active_model || "none";
     fields.activeModelCard.textContent = status.active_model || "none";
+    fields.modelBackend.textContent = status.model_backend || "n/a";
     const detectionText = status.detection_enabled ? "on" : "off";
     fields.detectionStatus.textContent = detectionText;
     fields.detectionCardStatus.textContent = detectionText;
@@ -116,6 +119,10 @@ async function refreshStatus() {
       status.inference_frame_width ?? status.inference_width,
       status.inference_frame_height ?? status.inference_height,
     ) + ` / ${formatResolution(status.model_input_width, status.model_input_height)}`;
+    fields.topInferenceSize.textContent = formatResolution(
+      status.inference_width,
+      status.inference_height,
+    );
     fields.detectionFps.textContent = formatNumber(status.detection_fps);
     fields.detectionFrameId.textContent = status.detection_frame_id ?? "n/a";
     fields.boxesDrawnCount.textContent = status.boxes_drawn_count ?? 0;

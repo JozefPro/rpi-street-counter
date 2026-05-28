@@ -26,9 +26,10 @@ detection:
     - bus
     - motorcycle
   run_every_n_frames: 3
-  # Keep inference dimensions smaller than the camera frame and divisible by 32 for YOLO.
+  # The camera stream remains 1280x720. Detection runs on this smaller copy,
+  # then boxes are scaled back to the full frame for drawing and counting.
   inference_width: 640
-  inference_height: 384
+  inference_height: 360
   input_size: 640
 
 counting:
@@ -71,8 +72,11 @@ debug:
 models:
   yolo_nano:
     type: "opencv_dnn_yolo"
+    display_name: "YOLOv5n"
+    backend: "OpenCV DNN / ONNX"
     weights: "models/yolov5n.onnx"
     url: "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx"
+    fixed_input_size: true
 
 project:
   name: "RPI5 Street Counter"

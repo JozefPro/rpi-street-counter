@@ -7,3 +7,4 @@ app.log
 app.pid
 models/*.onnx
 models/*.pt
+!models/yolov5n.onnx

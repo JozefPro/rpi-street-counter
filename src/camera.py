@@ -67,7 +67,10 @@ class CameraReader:
         self.latest_frame_id = 0
         self.streamed_frame_id = None
         self.detection_frame_id = None
-        self.active_model = detector.name if detector else "none"
+        self.model_key = detector.name if detector else "none"
+        self.active_model = getattr(detector, "display_name", self.model_key)
+        self.model_backend = getattr(detector, "backend", "none")
+        self.model_path = getattr(detector, "model_path", None)
         self.inference_ms = None
         self.inference_frame_width = None
         self.inference_frame_height = None
@@ -143,6 +146,7 @@ class CameraReader:
             f"{self.width}x{self.height} at {self.target_fps} FPS; "
             "actual: "
             f"{self.actual_width}x{self.actual_height} at {self.actual_camera_fps} FPS; "
+            f"model: {self.active_model} ({self.model_backend}); "
             "inference target: "
             f"{self.inference_width}x{self.inference_height}; "
             f"stream max: {self.max_stream_fps} FPS",
@@ -499,6 +503,7 @@ class CameraReader:
             f"streamed_frame_id={selected['selected_frame_id']} "
             f"delay_frames={self.delay_frames} "
             f"stream_uses_annotated_frame={selected['uses_annotated_frame']} "
+            f"model={self.active_model} "
             f"detections={self.vehicle_detections_count} "
             f"boxes_drawn={selected['boxes_drawn_count']} "
             f"camera_fps={self.camera_fps} "
