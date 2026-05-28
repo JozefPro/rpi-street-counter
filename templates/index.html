@@ -33,6 +33,7 @@
           <div class="section-heading">
             <span>Vehicle Counters</span>
           </div>
+          <div class="counter-window-label">Current 5-minute window</div>
           <div class="counter-grid">
             <div class="counter-metric">
               <span>Cars Left</span>
@@ -57,18 +58,26 @@
           </div>
           <div class="counter-debug">
             <div class="metric-row">
-              <span>Last updated</span>
-              <strong id="count-last-updated">Not updated yet</strong>
+              <span>Window started</span>
+              <strong id="window-started">Not reset yet</strong>
             </div>
             <div class="metric-row">
-              <span>Next update in</span>
-              <strong id="count-next-update">--:--</strong>
+              <span>Last reset</span>
+              <strong id="window-last-reset">Not reset yet</strong>
+            </div>
+            <div class="metric-row">
+              <span>Next reset in</span>
+              <strong id="window-next-reset">--:--</strong>
             </div>
           </div>
           <div class="counter-debug">
             <div class="metric-row">
-              <span>Real-time total</span>
-              <strong id="realtime-total-counted">0</strong>
+              <span>Lifetime total</span>
+              <strong id="lifetime-total-counted">0</strong>
+            </div>
+            <div class="metric-row">
+              <span>Lifetime L / R</span>
+              <strong id="lifetime-left-right">0 / 0</strong>
             </div>
             <div class="metric-row">
               <span>Waiting for second line</span>

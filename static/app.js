@@ -11,10 +11,12 @@ const fields = {
   carsRight: document.getElementById("cars-right"),
   visibleVehicles: document.getElementById("visible-vehicles"),
   totalCounted: document.getElementById("total-counted"),
-  realtimeTotalCounted: document.getElementById("realtime-total-counted"),
+  windowStarted: document.getElementById("window-started"),
+  windowLastReset: document.getElementById("window-last-reset"),
+  windowNextReset: document.getElementById("window-next-reset"),
+  lifetimeTotalCounted: document.getElementById("lifetime-total-counted"),
+  lifetimeLeftRight: document.getElementById("lifetime-left-right"),
   latestCrossingEvent: document.getElementById("latest-crossing-event"),
-  countLastUpdated: document.getElementById("count-last-updated"),
-  countNextUpdate: document.getElementById("count-next-update"),
   waitingSecondLine: document.getElementById("waiting-second-line"),
   lineCrossings: document.getElementById("line-crossings"),
   inferenceMs: document.getElementById("inference-ms"),
@@ -91,14 +93,17 @@ async function refreshStatus() {
       status.actual_width,
       status.actual_height,
     );
-    fields.carsLeft.textContent = status.displayed_cars_left ?? status.cars_left ?? 0;
-    fields.carsRight.textContent = status.displayed_cars_right ?? status.cars_right ?? 0;
+    fields.carsLeft.textContent = status.window_cars_left ?? status.cars_left ?? 0;
+    fields.carsRight.textContent = status.window_cars_right ?? status.cars_right ?? 0;
     fields.visibleVehicles.textContent = status.vehicle_detections_count ?? 0;
-    fields.totalCounted.textContent = status.displayed_total_counted ?? status.total_counted ?? 0;
-    fields.realtimeTotalCounted.textContent = status.total_counted ?? 0;
+    fields.totalCounted.textContent = status.window_total_counted ?? status.total_counted ?? 0;
+    fields.windowStarted.textContent = status.window_started_at_text || "Not reset yet";
+    fields.windowLastReset.textContent = status.window_last_reset_at_text || "Not reset yet";
+    fields.windowNextReset.textContent = formatDuration(status.seconds_until_window_reset);
+    fields.lifetimeTotalCounted.textContent = status.lifetime_total_counted ?? 0;
+    fields.lifetimeLeftRight.textContent =
+      `${status.lifetime_cars_left ?? 0} / ${status.lifetime_cars_right ?? 0}`;
     fields.latestCrossingEvent.textContent = status.latest_crossing_event || "none";
-    fields.countLastUpdated.textContent = status.count_last_updated_at_text || "Not updated yet";
-    fields.countNextUpdate.textContent = formatDuration(status.count_seconds_until_next_update);
     fields.waitingSecondLine.textContent = status.tracks_waiting_for_second_line ?? 0;
     fields.lineCrossings.textContent =
       `${status.line_a_crossings_seen ?? 0} / ${status.line_b_crossings_seen ?? 0}`;

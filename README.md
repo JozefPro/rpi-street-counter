@@ -173,18 +173,18 @@ sequence_b_then_a: "right"
 
 If your count direction is reversed, swap those two values. The first tracker is intentionally simple: it matches detections by nearest bounding-box center and expires tracks after `max_track_age_seconds`.
 
-## 5-minute counter display update
+## 5-minute counter windows
 
-The real vehicle counter updates internally as soon as a tracked vehicle crosses both counting lines. The dashboard's large counter values use a separate display snapshot, which refreshes every 5 minutes by default.
+The dashboard's large vehicle counters update live, but they represent only the current 5-minute window. When the window ends, the window counters reset to `0` and start counting the next window.
 
-Configure the display refresh interval in `config.yaml`:
+Configure the reset interval in `config.yaml`:
 
 ```yaml
 counting:
-  display_update_interval_seconds: 300
+  counter_window_seconds: 300
 ```
 
-This does not reset the totals. It only controls how often the dashboard snapshot copies the current real totals into `displayed_cars_left`, `displayed_cars_right`, and `displayed_total_counted`. The dashboard also shows `Last updated` and `Next update in` so you can see when the displayed values were refreshed.
+The lifetime counters continue increasing while the app is running and are not reset by the 5-minute window. The dashboard shows the current window start time, last reset time, and countdown to the next reset.
 
 ## Counting line tuning
 

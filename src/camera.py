@@ -23,7 +23,7 @@ class CameraReader:
         detection_enabled=False,
         detection_run_every_n_frames=3,
         line_counter=None,
-        count_display_update_interval_seconds=300,
+        counter_window_seconds=300,
     ):
         self.index = index
         self.width = width
@@ -38,7 +38,7 @@ class CameraReader:
         self.detection_run_every_n_frames = max(1, int(detection_run_every_n_frames))
         self.line_counter = line_counter
         self.counting_enabled = bool(line_counter and line_counter.enabled)
-        self.display_update_interval_seconds = max(1, int(count_display_update_interval_seconds))
+        self.counter_window_seconds = max(1, int(counter_window_seconds))
 
         self._capture = None
         self._frame = None
@@ -46,7 +46,7 @@ class CameraReader:
         self._frame_buffer = deque(maxlen=self.frame_buffer_size)
         self._lock = threading.Lock()
         self._detection_lock = threading.Lock()
-        self._count_snapshot_lock = threading.Lock()
+        self._counter_window_lock = threading.Lock()
         self._detection_busy = False
         self._completed_detections = 0
         self._start_lock = threading.Lock()
@@ -74,11 +74,16 @@ class CameraReader:
         self.cars_right = 0
         self.total_counted = 0
         now = time.time()
-        self.displayed_cars_left = self.cars_left
-        self.displayed_cars_right = self.cars_right
-        self.displayed_total_counted = self.total_counted
-        self.count_last_updated_at = now
-        self.count_next_update_at = now + self.display_update_interval_seconds
+        self.window_cars_left = 0
+        self.window_cars_right = 0
+        self.window_total_counted = 0
+        self.lifetime_cars_left = 0
+        self.lifetime_cars_right = 0
+        self.lifetime_total_counted = 0
+        self.window_started_at = now
+        self.window_last_reset_at = now
+        self.window_next_reset_at = now + self.counter_window_seconds
+        self.count_last_changed_at = None
         self.active_tracks = 0
         self.latest_crossing_event = None
         self.line_a_crossings_seen = 0
@@ -334,9 +339,11 @@ class CameraReader:
         if not state:
             return
 
-        self.cars_left = state["cars_left"]
-        self.cars_right = state["cars_right"]
-        self.total_counted = state["total_counted"]
+        self._apply_counter_totals(
+            state["cars_left"],
+            state["cars_right"],
+            state["total_counted"],
+        )
         self.active_tracks = state["active_tracks"]
         self.latest_crossing_event = state["latest_crossing_event"]
         self.line_a = state["line_a"]
@@ -346,35 +353,71 @@ class CameraReader:
         self.tracks_waiting_for_second_line = state["tracks_waiting_for_second_line"]
         self.track_id_switches = state["track_id_switches"]
         self.counted_classes = state["counted_classes"]
-        self._update_count_display_snapshot_if_due()
 
-    def get_count_display_status(self):
-        self._update_count_display_snapshot_if_due()
-        with self._count_snapshot_lock:
-            seconds_until_next = max(0, int(round(self.count_next_update_at - time.time())))
+    def get_count_window_status(self):
+        self._reset_count_window_if_due()
+        with self._counter_window_lock:
+            seconds_until_reset = max(0, int(round(self.window_next_reset_at - time.time())))
             return {
-                "displayed_cars_left": self.displayed_cars_left,
-                "displayed_cars_right": self.displayed_cars_right,
-                "displayed_total_counted": self.displayed_total_counted,
-                "count_last_updated_at": self.count_last_updated_at,
-                "count_last_updated_at_text": self._format_timestamp(self.count_last_updated_at),
-                "count_next_update_at": self.count_next_update_at,
-                "count_next_update_at_text": self._format_timestamp(self.count_next_update_at),
-                "count_seconds_until_next_update": seconds_until_next,
-                "display_update_interval_seconds": self.display_update_interval_seconds,
+                "cars_left": self.window_cars_left,
+                "cars_right": self.window_cars_right,
+                "total_counted": self.window_total_counted,
+                "window_cars_left": self.window_cars_left,
+                "window_cars_right": self.window_cars_right,
+                "window_total_counted": self.window_total_counted,
+                "lifetime_cars_left": self.lifetime_cars_left,
+                "lifetime_cars_right": self.lifetime_cars_right,
+                "lifetime_total_counted": self.lifetime_total_counted,
+                "window_started_at": self.window_started_at,
+                "window_started_at_text": self._format_timestamp(self.window_started_at),
+                "window_last_reset_at": self.window_last_reset_at,
+                "window_last_reset_at_text": self._format_timestamp(self.window_last_reset_at),
+                "window_next_reset_at": self.window_next_reset_at,
+                "window_next_reset_at_text": self._format_timestamp(self.window_next_reset_at),
+                "seconds_until_window_reset": seconds_until_reset,
+                "count_last_changed_at": self.count_last_changed_at,
+                "count_last_changed_at_text": self._format_timestamp(self.count_last_changed_at),
+                "counter_window_seconds": self.counter_window_seconds,
             }
 
-    def _update_count_display_snapshot_if_due(self):
+    def _apply_counter_totals(self, lifetime_left, lifetime_right, lifetime_total):
+        self._reset_count_window_if_due()
+        with self._counter_window_lock:
+            left_delta = max(0, lifetime_left - self.lifetime_cars_left)
+            right_delta = max(0, lifetime_right - self.lifetime_cars_right)
+            total_delta = max(0, lifetime_total - self.lifetime_total_counted)
+
+            if left_delta or right_delta or total_delta:
+                self.window_cars_left += left_delta
+                self.window_cars_right += right_delta
+                self.window_total_counted += total_delta
+                self.count_last_changed_at = time.time()
+
+            self.lifetime_cars_left = lifetime_left
+            self.lifetime_cars_right = lifetime_right
+            self.lifetime_total_counted = lifetime_total
+            self.cars_left = self.window_cars_left
+            self.cars_right = self.window_cars_right
+            self.total_counted = self.window_total_counted
+
+    def _reset_count_window_if_due(self):
         now = time.time()
-        with self._count_snapshot_lock:
-            if now < self.count_next_update_at:
+        with self._counter_window_lock:
+            if now < self.window_next_reset_at:
                 return
 
-            self.displayed_cars_left = self.cars_left
-            self.displayed_cars_right = self.cars_right
-            self.displayed_total_counted = self.total_counted
-            self.count_last_updated_at = now
-            self.count_next_update_at = now + self.display_update_interval_seconds
+            missed_windows = int((now - self.window_next_reset_at) // self.counter_window_seconds) + 1
+            reset_at = self.window_next_reset_at + (missed_windows - 1) * self.counter_window_seconds
+            self.window_last_reset_at = reset_at
+            self.window_started_at = reset_at
+            self.window_next_reset_at = reset_at + self.counter_window_seconds
+
+            self.window_cars_left = 0
+            self.window_cars_right = 0
+            self.window_total_counted = 0
+            self.cars_left = 0
+            self.cars_right = 0
+            self.total_counted = 0
 
     def _format_timestamp(self, timestamp):
         if not timestamp:

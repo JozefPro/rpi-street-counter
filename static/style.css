@@ -144,6 +144,13 @@ strong {
   text-transform: uppercase;
 }
 
+.counter-window-label {
+  margin: -4px 0 14px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .counter-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

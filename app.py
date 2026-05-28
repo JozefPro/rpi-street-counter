@@ -51,7 +51,7 @@ DEFAULT_CONFIG = {
         "sequence_a_then_b": "left",
         "sequence_b_then_a": "right",
         "max_track_age_seconds": 6.0,
-        "display_update_interval_seconds": 300,
+        "counter_window_seconds": 300,
     },
     "tracking": {
         "max_distance_px": 190,
@@ -103,7 +103,7 @@ camera = CameraReader(
     detection_enabled=config["detection"]["enabled"],
     detection_run_every_n_frames=config["detection"]["run_every_n_frames"],
     line_counter=line_counter,
-    count_display_update_interval_seconds=config["counting"].get("display_update_interval_seconds", 300),
+    counter_window_seconds=config["counting"].get("counter_window_seconds", 300),
 )
 
 app = Flask(__name__)
@@ -151,13 +151,13 @@ def api_status():
     shared_state.set_camera_error(camera.error)
     state = shared_state.to_dict()
     stats = get_system_stats()
-    count_display_status = camera.get_count_display_status()
+    count_window_status = camera.get_count_window_status()
 
     return jsonify(
         {
             **state,
             **stats,
-            **count_display_status,
+            **count_window_status,
             "requested_width": camera.width,
             "requested_height": camera.height,
             "requested_fps": camera.target_fps,
