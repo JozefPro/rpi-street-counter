@@ -3,6 +3,11 @@ import math
 import cv2
 
 
+CLASS_ALIASES = {
+    "motorbike": "motorcycle",
+}
+
+
 def side_of_line(point, line_p1, line_p2):
     px, py = point
     x1, y1 = line_p1
@@ -75,7 +80,17 @@ class LineCounter:
             tracking_config.get("max_age_seconds", config.get("max_track_age_seconds", 5.0))
         )
         self.max_distance_px = float(tracking_config.get("max_distance_px", 160))
-        self.vehicle_classes = set(vehicle_classes or ["car", "truck", "bus", "motorcycle"])
+        configured_classes = config.get("counted_classes") or vehicle_classes or [
+            "car",
+            "truck",
+            "bus",
+            "motorcycle",
+        ]
+        self.vehicle_classes = {
+            self._normalize_class_name(class_name)
+            for class_name in configured_classes
+        }
+        self.counted_classes = sorted(self.vehicle_classes)
 
         self.draw_track_centers = bool(debug_config.get("draw_track_centers", False))
         self.draw_track_ids = bool(debug_config.get("draw_track_ids", False))
@@ -99,7 +114,7 @@ class LineCounter:
 
         vehicle_detections = [
             detection for detection in detections
-            if detection.get("class_name") in self.vehicle_classes
+            if self._normalize_class_name(detection.get("class_name")) in self.vehicle_classes
         ]
         self._remove_stale_tracks(now)
 
@@ -148,6 +163,7 @@ class LineCounter:
             "line_b_crossings_seen": self.line_b_crossings_seen,
             "tracks_waiting_for_second_line": self._tracks_waiting_for_second_line(),
             "track_id_switches": self.track_id_switches,
+            "counted_classes": self.counted_classes,
         }
 
     def _match_track(self, center, candidate_track_ids):
@@ -263,6 +279,10 @@ class LineCounter:
     def _detection_center(self, detection):
         x1, y1, x2, y2 = detection["bbox"]
         return ((x1 + x2) / 2.0, (y1 + y2) / 2.0)
+
+    def _normalize_class_name(self, class_name):
+        normalized = str(class_name or "").strip().lower()
+        return CLASS_ALIASES.get(normalized, normalized)
 
     def _line_pixels(self, line_config, frame_width, frame_height):
         p1_norm = line_config.get("p1_norm", [0.0, 0.0])

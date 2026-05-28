@@ -141,15 +141,23 @@ counting:
   enabled: true
   draw_lines: true
   label_offset_px: [-28, -14]
+  counted_classes:
+    - car
+    - truck
+    - bus
+    - motorcycle
+    - motorbike
   line_a:
-    p1_norm: [0.32, 0.66]
-    p2_norm: [0.62, 0.43]
+    p1_norm: [0.14, 0.66]
+    p2_norm: [0.69, 0.28]
   line_b:
-    p1_norm: [0.56, 0.82]
-    p2_norm: [0.86, 0.59]
+    p1_norm: [0.42, 0.98]
+    p2_norm: [0.94, 0.47]
 ```
 
 `p1_norm` and `p2_norm` define the endpoints of each diagonal line. The app converts them to pixel coordinates for the current frame size and draws labels `A` and `B` on the stream.
+
+`counted_classes` controls which detected vehicle classes can update the counters. The default counts `car`, `truck`, `bus`, `motorcycle`, and `motorbike`; `motorbike` is normalized to `motorcycle` for COCO-style model labels. Bicycle is intentionally not counted by default.
 
 Counting is sequence based. If one tracked vehicle crosses line A and then line B, the direction comes from:
 
@@ -167,7 +175,7 @@ If your count direction is reversed, swap those two values. The first tracker is
 
 ## Counting line tuning
 
-If cars are missed, tune the line and tracker values in `config.yaml`.
+If vehicles are missed, tune the line and tracker values in `config.yaml`.
 
 Move the lines toward the center of the road when vehicles are detected too late or disappear before crossing the second line. Increase `counting.max_track_age_seconds` if tracks disappear too quickly. Increase `tracking.max_distance_px` if track IDs change too often between detector updates.
 
