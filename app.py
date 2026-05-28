@@ -9,6 +9,7 @@ from src.camera import CameraReader
 from src.detection import create_detector
 from src.shared_state import SharedState
 from src.system_stats import get_system_stats
+from src.tracking.line_counter import LineCounter
 
 
 DEFAULT_CONFIG = {
@@ -29,6 +30,25 @@ DEFAULT_CONFIG = {
             "weights": "models/yolov5n.onnx",
             "url": "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx",
         },
+    },
+    "counting": {
+        "enabled": True,
+        "draw_lines": True,
+        "line_a": {
+            "name": "A",
+            "p1_norm": [0.36, 0.58],
+            "p2_norm": [0.62, 0.39],
+            "color": [0, 0, 255],
+        },
+        "line_b": {
+            "name": "B",
+            "p1_norm": [0.75, 0.89],
+            "p2_norm": [0.96, 0.65],
+            "color": [0, 0, 255],
+        },
+        "sequence_a_then_b": "left",
+        "sequence_b_then_a": "right",
+        "max_track_age_seconds": 3.0,
     },
     "project": {"name": "RPI5 Street Counter"},
 }
@@ -53,6 +73,7 @@ def load_config(path="config.yaml"):
 config = load_config()
 shared_state = SharedState()
 detector = create_detector(config)
+line_counter = LineCounter(config.get("counting", {}), config["detection"].get("classes", []))
 camera = CameraReader(
     index=config["camera"]["index"],
     width=config["camera"]["width"],
@@ -64,6 +85,7 @@ camera = CameraReader(
     detector=detector,
     detection_enabled=config["detection"]["enabled"],
     detection_run_every_n_frames=config["detection"]["run_every_n_frames"],
+    line_counter=line_counter,
 )
 
 app = Flask(__name__)
@@ -141,6 +163,14 @@ def api_status():
             "boxes_drawn_count": camera.boxes_drawn_count,
             "stream_uses_annotated_frame": camera.stream_uses_annotated_frame,
             "detection_error": camera.detection_error,
+            "cars_left": camera.cars_left,
+            "cars_right": camera.cars_right,
+            "total_counted": camera.total_counted,
+            "counting_enabled": camera.counting_enabled,
+            "line_a": camera.line_a,
+            "line_b": camera.line_b,
+            "active_tracks": camera.active_tracks,
+            "latest_crossing_event": camera.latest_crossing_event,
         }
     )
 

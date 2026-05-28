@@ -8,8 +8,9 @@ Current milestone:
 - OpenCV USB webcam reader running in a background thread.
 - MJPEG live stream at `/video_feed`.
 - JSON status endpoint at `/api/status`.
-- Dark dashboard with video, car counter placeholders, detection status, and Raspberry Pi stats.
+- Dark dashboard with video, car counters, detection status, and Raspberry Pi stats.
 - Optional YOLO nano vehicle detection for drawing bounding boxes.
+- Diagonal A/B line counting for vehicles that cross both configured lines.
 
 ## Project Structure
 
@@ -129,6 +130,40 @@ stream:
 
 `delay_frames: 0` streams the newest buffered frame. Start with `4`; if boxes appear ahead or behind the video, try `0`, `2`, `4`, `6`, or `8`. Higher delay can improve sync but adds visible latency.
 
+## Diagonal counting lines
+
+Vehicle counting is configured in `config.yaml` under `counting`.
+
+Each line is a two-point diagonal segment using normalized coordinates from `0.0` to `1.0`, so the same config works when the camera resolution changes:
+
+```yaml
+counting:
+  enabled: true
+  draw_lines: true
+  line_a:
+    p1_norm: [0.36, 0.58]
+    p2_norm: [0.62, 0.39]
+  line_b:
+    p1_norm: [0.75, 0.89]
+    p2_norm: [0.96, 0.65]
+```
+
+`p1_norm` and `p2_norm` define the endpoints of each diagonal line. The app converts them to pixel coordinates for the current frame size and draws labels `A` and `B` on the stream.
+
+Counting is sequence based. If one tracked vehicle crosses line A and then line B, the direction comes from:
+
+```yaml
+sequence_a_then_b: "left"
+```
+
+If it crosses line B and then line A, the direction comes from:
+
+```yaml
+sequence_b_then_a: "right"
+```
+
+If your count direction is reversed, swap those two values. The first tracker is intentionally simple: it matches detections by nearest bounding-box center and expires tracks after `max_track_age_seconds`.
+
 ## Deploy to Raspberry Pi
 
 The Raspberry Pi runs the actual app because the USB webcam is connected there. The Mac is used for development, GitHub, and deployment over SSH.
@@ -163,4 +198,4 @@ The deploy script is intentionally conservative: it refuses to deploy if your lo
 
 ## Notes
 
-This milestone intentionally does not include line crossing, final counting, benchmarking, Docker, Tailscale changes, or systemd changes. Those parts will be added later on top of this structure.
+This milestone intentionally does not include final production tracking, benchmarking, Docker, Tailscale changes, or systemd changes. Those parts can be added later on top of this structure.

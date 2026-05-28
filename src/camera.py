@@ -21,6 +21,7 @@ class CameraReader:
         detector=None,
         detection_enabled=False,
         detection_run_every_n_frames=3,
+        line_counter=None,
     ):
         self.index = index
         self.width = width
@@ -33,6 +34,8 @@ class CameraReader:
         self.detector = detector
         self.detection_enabled = bool(detection_enabled and detector and detector.enabled)
         self.detection_run_every_n_frames = max(1, int(detection_run_every_n_frames))
+        self.line_counter = line_counter
+        self.counting_enabled = bool(line_counter and line_counter.enabled)
 
         self._capture = None
         self._frame = None
@@ -63,6 +66,14 @@ class CameraReader:
         self.boxes_drawn_count = 0
         self.stream_uses_annotated_frame = False
         self.detection_error = None
+        self.cars_left = 0
+        self.cars_right = 0
+        self.total_counted = 0
+        self.active_tracks = 0
+        self.latest_crossing_event = None
+        initial_counter_state = line_counter.to_status() if line_counter else {}
+        self.line_a = initial_counter_state.get("line_a")
+        self.line_b = initial_counter_state.get("line_b")
         self.error = None
         self.running = False
 
@@ -206,11 +217,14 @@ class CameraReader:
                         break
 
             frame = selected_entry["annotated_frame"] if uses_annotated_frame else selected_entry["raw_frame"]
+            output_frame = frame.copy()
+            if not uses_annotated_frame:
+                output_frame = self._draw_counting_lines(output_frame)
             self.streamed_frame_id = selected_entry["frame_id"]
             self.stream_uses_annotated_frame = uses_annotated_frame
             self.boxes_drawn_count = len(selected_entry["detections"]) if uses_annotated_frame else 0
             return {
-                "frame": frame.copy(),
+                "frame": output_frame,
                 "selected_frame_id": selected_entry["frame_id"],
                 "target_frame_id": target_entry["frame_id"],
                 "uses_annotated_frame": uses_annotated_frame,
@@ -253,7 +267,9 @@ class CameraReader:
             return
 
         elapsed_ms = (time.monotonic() - started_at) * 1000
+        counter_state = self._update_counter(frame, detections)
         annotated_frame = self._draw_detections(frame, detections)
+        annotated_frame = self._draw_counting_lines(annotated_frame)
         with self._lock:
             for entry in self._frame_buffer:
                 if entry["frame_id"] == frame_id:
@@ -265,14 +281,12 @@ class CameraReader:
         self.vehicle_detections_count = len(detections)
         self.detection_frame_id = frame_id
         self.detection_error = None
+        self._apply_counter_state(counter_state)
         with self._detection_lock:
             self._completed_detections += 1
             self._detection_busy = False
 
     def _draw_detections(self, frame, detections):
-        if not detections:
-            return frame
-
         annotated = frame.copy()
         for detection in detections:
             x1, y1, x2, y2 = detection["bbox"]
@@ -293,6 +307,31 @@ class CameraReader:
             )
 
         return annotated
+
+    def _update_counter(self, frame, detections):
+        if not self.line_counter:
+            return None
+
+        frame_height, frame_width = frame.shape[:2]
+        return self.line_counter.update(detections, frame_width, frame_height, time.monotonic())
+
+    def _apply_counter_state(self, state):
+        if not state:
+            return
+
+        self.cars_left = state["cars_left"]
+        self.cars_right = state["cars_right"]
+        self.total_counted = state["total_counted"]
+        self.active_tracks = state["active_tracks"]
+        self.latest_crossing_event = state["latest_crossing_event"]
+        self.line_a = state["line_a"]
+        self.line_b = state["line_b"]
+
+    def _draw_counting_lines(self, frame):
+        if not self.line_counter:
+            return frame
+
+        return self.line_counter.draw(frame)
 
     def _maybe_log_sync(self, now, selected):
         if now - self._last_debug_log_time < 1.0:

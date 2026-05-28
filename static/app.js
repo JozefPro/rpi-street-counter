@@ -10,11 +10,15 @@ const fields = {
   carsLeft: document.getElementById("cars-left"),
   carsRight: document.getElementById("cars-right"),
   visibleVehicles: document.getElementById("visible-vehicles"),
+  totalCounted: document.getElementById("total-counted"),
+  latestCrossingEvent: document.getElementById("latest-crossing-event"),
   inferenceMs: document.getElementById("inference-ms"),
   detectionFps: document.getElementById("detection-fps"),
   detectionFrameId: document.getElementById("detection-frame-id"),
   boxesDrawnCount: document.getElementById("boxes-drawn-count"),
   annotatedStream: document.getElementById("annotated-stream"),
+  countingStatus: document.getElementById("counting-status"),
+  activeTracks: document.getElementById("active-tracks"),
   streamDelay: document.getElementById("stream-delay"),
   latestFrameId: document.getElementById("latest-frame-id"),
   streamedFrameId: document.getElementById("streamed-frame-id"),
@@ -73,6 +77,8 @@ async function refreshStatus() {
     fields.carsLeft.textContent = status.cars_left ?? 0;
     fields.carsRight.textContent = status.cars_right ?? 0;
     fields.visibleVehicles.textContent = status.vehicle_detections_count ?? 0;
+    fields.totalCounted.textContent = status.total_counted ?? 0;
+    fields.latestCrossingEvent.textContent = status.latest_crossing_event || "none";
     fields.inferenceMs.textContent =
       status.inference_ms === null || status.inference_ms === undefined
         ? "n/a"
@@ -81,6 +87,8 @@ async function refreshStatus() {
     fields.detectionFrameId.textContent = status.detection_frame_id ?? "n/a";
     fields.boxesDrawnCount.textContent = status.boxes_drawn_count ?? 0;
     fields.annotatedStream.textContent = status.stream_uses_annotated_frame ? "yes" : "no";
+    fields.countingStatus.textContent = status.counting_enabled ? "on" : "off";
+    fields.activeTracks.textContent = status.active_tracks ?? 0;
     fields.streamDelay.textContent = `${status.stream_delay_frames ?? 0} frames`;
     fields.latestFrameId.textContent = status.latest_frame_id ?? "n/a";
     fields.streamedFrameId.textContent = status.streamed_frame_id ?? "n/a";

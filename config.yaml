@@ -28,6 +28,26 @@ detection:
   run_every_n_frames: 3
   input_size: 640
 
+counting:
+  enabled: true
+  draw_lines: true
+
+  line_a:
+    name: "A"
+    p1_norm: [0.36, 0.58]
+    p2_norm: [0.62, 0.39]
+    color: [0, 0, 255]
+
+  line_b:
+    name: "B"
+    p1_norm: [0.75, 0.89]
+    p2_norm: [0.96, 0.65]
+    color: [0, 0, 255]
+
+  sequence_a_then_b: "left"
+  sequence_b_then_a: "right"
+  max_track_age_seconds: 3.0
+
 models:
   yolo_nano:
     type: "opencv_dnn_yolo"

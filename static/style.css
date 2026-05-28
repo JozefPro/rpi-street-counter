@@ -151,6 +151,7 @@ strong {
 }
 
 .counter-metric,
+.latest-event,
 .metric-row {
   background: var(--card-soft);
   border: 1px solid var(--border);
@@ -186,6 +187,22 @@ strong {
 
 .metric-row {
   padding: 13px 14px;
+}
+
+.latest-event {
+  margin-top: 12px;
+  padding: 13px 14px;
+}
+
+.latest-event span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.latest-event strong {
+  font-size: clamp(1rem, 1.5vw, 1.35rem);
+  overflow-wrap: anywhere;
 }
 
 .metric-row strong {
