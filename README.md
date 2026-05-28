@@ -113,7 +113,7 @@ The default YOLO model is `yolov5n.onnx`, run every 3 camera frames. The full ca
 ```yaml
 detection:
   inference_width: 640
-  inference_height: 360
+  inference_height: 384
   run_every_n_frames: 3
 ```
 

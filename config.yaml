@@ -26,8 +26,9 @@ detection:
     - bus
     - motorcycle
   run_every_n_frames: 3
+  # Keep inference dimensions smaller than the camera frame and divisible by 32 for YOLO.
   inference_width: 640
-  inference_height: 360
+  inference_height: 384
   input_size: 640
 
 counting:
