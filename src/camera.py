@@ -35,6 +35,9 @@ class CameraReader:
         self._jpeg_frame = None
         self._detections = []
         self._lock = threading.Lock()
+        self._detection_lock = threading.Lock()
+        self._detection_busy = False
+        self._completed_detections = 0
         self._start_lock = threading.Lock()
         self._thread = None
         self._stop_event = threading.Event()
@@ -98,7 +101,6 @@ class CameraReader:
         self.running = True
         frames = 0
         encoded_frames = 0
-        detected_frames = 0
         frame_number = 0
         last_fps_time = time.monotonic()
         next_encode_time = 0.0
@@ -117,8 +119,7 @@ class CameraReader:
 
             frame_number += 1
             if self.detection_enabled and frame_number % self.detection_run_every_n_frames == 0:
-                self._run_detection(frame)
-                detected_frames += 1
+                self._start_detection(frame.copy())
 
             now = time.monotonic()
             if next_encode_time == 0.0:
@@ -137,13 +138,16 @@ class CameraReader:
             frames += 1
             elapsed = now - last_fps_time
             if elapsed >= 1.0:
+                with self._detection_lock:
+                    completed_detections = self._completed_detections
+                    self._completed_detections = 0
+
                 self.camera_fps = round(frames / elapsed, 1)
                 self.stream_fps = round(encoded_frames / elapsed, 1)
-                self.detection_fps = round(detected_frames / elapsed, 1)
+                self.detection_fps = round(completed_detections / elapsed, 1)
                 self.fps = self.stream_fps
                 frames = 0
                 encoded_frames = 0
-                detected_frames = 0
                 last_fps_time = now
 
         self._capture.release()
@@ -162,6 +166,15 @@ class CameraReader:
 
         return self._encode_frame(self._placeholder_frame())
 
+    def _start_detection(self, frame):
+        with self._detection_lock:
+            if self._detection_busy:
+                return
+            self._detection_busy = True
+
+        thread = threading.Thread(target=self._run_detection, args=(frame,), daemon=True)
+        thread.start()
+
     def _run_detection(self, frame):
         started_at = time.monotonic()
         try:
@@ -169,6 +182,8 @@ class CameraReader:
         except Exception as exc:
             self.detection_error = str(exc)
             print(f"Detection error: {exc}", flush=True)
+            with self._detection_lock:
+                self._detection_busy = False
             return
 
         elapsed_ms = (time.monotonic() - started_at) * 1000
@@ -178,6 +193,9 @@ class CameraReader:
         self.inference_ms = round(elapsed_ms, 1)
         self.vehicle_detections_count = len(detections)
         self.detection_error = None
+        with self._detection_lock:
+            self._completed_detections += 1
+            self._detection_busy = False
 
     def _draw_detections(self, frame):
         with self._lock:
