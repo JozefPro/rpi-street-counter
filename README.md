@@ -107,7 +107,7 @@ detection:
 
 Model selection happens in `src/detection/factory.py`. The default lightweight implementation is in `src/detection/opencv_dnn.py` and runs a YOLOv8 nano ONNX model through OpenCV DNN, avoiding a PyTorch runtime on the Raspberry Pi.
 
-The default YOLO model is `yolov8n.onnx`, run every 3 camera frames at input size 320. The model file is downloaded on first use to `models/yolov8n.onnx`. It detects road vehicle classes configured under `detection.classes`.
+The default YOLO model is `yolov5n.onnx`, run every 3 camera frames at input size 320. The model file is downloaded on first use to `models/yolov5n.onnx`. It detects road vehicle classes configured under `detection.classes`.
 
 If the Raspberry Pi becomes slow, reduce:
 

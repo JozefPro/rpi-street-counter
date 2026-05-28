@@ -68,7 +68,10 @@ class OpenCVDnnYoloDetector(BaseDetector):
         output = self._net.forward()
 
         raw_predictions = np.squeeze(output)
-        if raw_predictions.shape[0] == 84:
+        if len(raw_predictions.shape) != 2:
+            raw_predictions = raw_predictions.reshape(-1, raw_predictions.shape[-1])
+
+        if raw_predictions.shape[0] in (84, 85):
             predictions = raw_predictions.T
         else:
             predictions = raw_predictions
@@ -80,11 +83,17 @@ class OpenCVDnnYoloDetector(BaseDetector):
         y_scale = frame_height / self.input_size
 
         for prediction in predictions:
-            scores = prediction[4:]
+            if len(prediction) >= 85:
+                objectness = float(prediction[4])
+                scores = prediction[5:]
+            else:
+                objectness = 1.0
+                scores = prediction[4:]
+
             class_id = int(np.argmax(scores))
             if class_id >= len(COCO_CLASS_NAMES):
                 continue
-            confidence = float(scores[class_id])
+            confidence = objectness * float(scores[class_id])
             class_name = COCO_CLASS_NAMES[class_id]
 
             if confidence < self.confidence_threshold or class_name not in self.class_names:

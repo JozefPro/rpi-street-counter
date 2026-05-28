@@ -26,8 +26,8 @@ DEFAULT_CONFIG = {
     "models": {
         "yolo_nano": {
             "type": "opencv_dnn_yolo",
-            "weights": "models/yolov8n.onnx",
-            "url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8n.onnx",
+            "weights": "models/yolov5n.onnx",
+            "url": "https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx",
         },
     },
     "project": {"name": "RPI5 Street Counter"},
