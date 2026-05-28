@@ -22,171 +22,175 @@
         </div>
       </section>
 
-      <section class="card video-card">
-        <div class="video-label">Live Video Stream</div>
-        <div class="video-frame">
-          <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Live street camera stream">
-        </div>
-        <p id="camera-error" class="camera-error" hidden></p>
-      </section>
-
-      <section class="dashboard-grid">
-        <section class="card counter-card">
-          <div class="section-heading">
-            <span>Vehicle Counters</span>
-          </div>
-          <div class="counter-window-label">Current 5-minute window</div>
-          <div class="counter-grid">
-            <div class="counter-metric">
-              <span>Cars Left</span>
-              <strong id="cars-left">0</strong>
+      <section class="dashboard-layout">
+        <section class="video-section">
+          <section class="card video-card">
+            <div class="video-label">Live Video Stream</div>
+            <div class="video-frame">
+              <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Live street camera stream">
             </div>
-            <div class="counter-metric">
-              <span>Cars Right</span>
-              <strong id="cars-right">0</strong>
-            </div>
-            <div class="counter-metric current-vehicles">
-              <span>Visible Vehicles</span>
-              <strong id="visible-vehicles">0</strong>
-            </div>
-            <div class="counter-metric current-vehicles">
-              <span>Total Counted</span>
-              <strong id="total-counted">0</strong>
-            </div>
-          </div>
-          <div class="latest-event">
-            <span>Latest Crossing</span>
-            <strong id="latest-crossing-event">none</strong>
-          </div>
-          <div class="counter-debug">
-            <div class="metric-row">
-              <span>Window started</span>
-              <strong id="window-started">Not reset yet</strong>
-            </div>
-            <div class="metric-row">
-              <span>Last reset</span>
-              <strong id="window-last-reset">Not reset yet</strong>
-            </div>
-            <div class="metric-row">
-              <span>Next reset in</span>
-              <strong id="window-next-reset">--:--</strong>
-            </div>
-          </div>
-          <div class="counter-debug">
-            <div class="metric-row">
-              <span>Lifetime total</span>
-              <strong id="lifetime-total-counted">0</strong>
-            </div>
-            <div class="metric-row">
-              <span>Lifetime L / R</span>
-              <strong id="lifetime-left-right">0 / 0</strong>
-            </div>
-            <div class="metric-row">
-              <span>Waiting for second line</span>
-              <strong id="waiting-second-line">0</strong>
-            </div>
-            <div class="metric-row">
-              <span>A / B crossings</span>
-              <strong id="line-crossings">0 / 0</strong>
-            </div>
-          </div>
+            <p id="camera-error" class="camera-error" hidden></p>
+          </section>
         </section>
 
-        <section class="card info-card">
-          <div class="section-heading">
-            <span>Detection</span>
-          </div>
-          <div class="metric-list">
-            <div class="metric-row">
-              <span>Status</span>
-              <strong id="detection-card-status">off</strong>
+        <aside class="side-panel">
+          <section class="card counter-card">
+            <div class="section-heading">
+              <span>Vehicle Counters</span>
             </div>
-            <div class="metric-row">
-              <span>Active Model</span>
-              <strong id="active-model-card">none</strong>
+            <div class="counter-window-label">Current 5-minute window</div>
+            <div class="counter-grid">
+              <div class="counter-metric">
+                <span>Cars Left</span>
+                <strong id="cars-left">0</strong>
+              </div>
+              <div class="counter-metric">
+                <span>Cars Right</span>
+                <strong id="cars-right">0</strong>
+              </div>
+              <div class="counter-metric current-vehicles">
+                <span>Visible Vehicles</span>
+                <strong id="visible-vehicles">0</strong>
+              </div>
+              <div class="counter-metric current-vehicles">
+                <span>Total Counted</span>
+                <strong id="total-counted">0</strong>
+              </div>
             </div>
-            <div class="metric-row">
-              <span>Inference</span>
-              <strong id="inference-ms">n/a</strong>
+            <div class="latest-event">
+              <span>Latest Crossing</span>
+              <strong id="latest-crossing-event">none</strong>
             </div>
-            <div class="metric-row">
-              <span>Inference / Model Input</span>
-              <strong id="inference-size">n/a</strong>
+            <div class="counter-debug">
+              <div class="metric-row">
+                <span>Window started</span>
+                <strong id="window-started">Not reset yet</strong>
+              </div>
+              <div class="metric-row">
+                <span>Last reset</span>
+                <strong id="window-last-reset">Not reset yet</strong>
+              </div>
+              <div class="metric-row">
+                <span>Next reset in</span>
+                <strong id="window-next-reset">--:--</strong>
+              </div>
             </div>
-            <div class="metric-row">
-              <span>Detection FPS</span>
-              <strong id="detection-fps">0.0</strong>
+            <div class="counter-debug">
+              <div class="metric-row">
+                <span>Lifetime total</span>
+                <strong id="lifetime-total-counted">0</strong>
+              </div>
+              <div class="metric-row">
+                <span>Lifetime L / R</span>
+                <strong id="lifetime-left-right">0 / 0</strong>
+              </div>
+              <div class="metric-row">
+                <span>Waiting for second line</span>
+                <strong id="waiting-second-line">0</strong>
+              </div>
+              <div class="metric-row">
+                <span>A / B crossings</span>
+                <strong id="line-crossings">0 / 0</strong>
+              </div>
             </div>
-            <div class="metric-row">
-              <span>Detection Frame</span>
-              <strong id="detection-frame-id">n/a</strong>
-            </div>
-            <div class="metric-row">
-              <span>Boxes Drawn</span>
-              <strong id="boxes-drawn-count">0</strong>
-            </div>
-            <div class="metric-row">
-              <span>Annotated Stream</span>
-              <strong id="annotated-stream">no</strong>
-            </div>
-            <div class="metric-row">
-              <span>Counting</span>
-              <strong id="counting-status">off</strong>
-            </div>
-            <div class="metric-row">
-              <span>Active Tracks</span>
-              <strong id="active-tracks">0</strong>
-            </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="card info-card stats-card">
-          <div class="section-heading">
-            <span>Raspberry Pi</span>
-          </div>
-          <div class="metric-list">
-            <div class="metric-row">
-              <span>CPU</span>
-              <strong id="cpu">0%</strong>
+          <section class="card info-card">
+            <div class="section-heading">
+              <span>Detection</span>
             </div>
-            <div class="metric-row">
-              <span>RAM</span>
-              <strong id="ram">0%</strong>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>Status</span>
+                <strong id="detection-card-status">off</strong>
+              </div>
+              <div class="metric-row">
+                <span>Active Model</span>
+                <strong id="active-model-card">none</strong>
+              </div>
+              <div class="metric-row">
+                <span>Inference</span>
+                <strong id="inference-ms">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Inference / Model Input</span>
+                <strong id="inference-size">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Detection FPS</span>
+                <strong id="detection-fps">0.0</strong>
+              </div>
+              <div class="metric-row">
+                <span>Detection Frame</span>
+                <strong id="detection-frame-id">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Boxes Drawn</span>
+                <strong id="boxes-drawn-count">0</strong>
+              </div>
+              <div class="metric-row">
+                <span>Annotated Stream</span>
+                <strong id="annotated-stream">no</strong>
+              </div>
+              <div class="metric-row">
+                <span>Counting</span>
+                <strong id="counting-status">off</strong>
+              </div>
+              <div class="metric-row">
+                <span>Active Tracks</span>
+                <strong id="active-tracks">0</strong>
+              </div>
             </div>
-            <div class="metric-row">
-              <span>Temperature</span>
-              <strong id="temperature">n/a</strong>
+          </section>
+
+          <section class="card info-card stats-card">
+            <div class="section-heading">
+              <span>Raspberry Pi</span>
             </div>
-            <div class="metric-row">
-              <span>Stream FPS</span>
-              <strong id="fps">0.0</strong>
+            <div class="metric-list">
+              <div class="metric-row">
+                <span>CPU</span>
+                <strong id="cpu">0%</strong>
+              </div>
+              <div class="metric-row">
+                <span>RAM</span>
+                <strong id="ram">0%</strong>
+              </div>
+              <div class="metric-row">
+                <span>Temperature</span>
+                <strong id="temperature">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Stream FPS</span>
+                <strong id="fps">0.0</strong>
+              </div>
+              <div class="metric-row">
+                <span>Camera</span>
+                <strong id="actual-resolution">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Requested</span>
+                <strong id="requested-resolution">1280x720</strong>
+              </div>
+              <div class="metric-row">
+                <span>Stream Delay</span>
+                <strong id="stream-delay">0 frames</strong>
+              </div>
+              <div class="metric-row">
+                <span>Latest Frame</span>
+                <strong id="latest-frame-id">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Streamed Frame</span>
+                <strong id="streamed-frame-id">n/a</strong>
+              </div>
+              <div class="metric-row">
+                <span>Frame Buffer</span>
+                <strong id="frame-buffer-size">n/a</strong>
+              </div>
             </div>
-            <div class="metric-row">
-              <span>Camera</span>
-              <strong id="actual-resolution">n/a</strong>
-            </div>
-            <div class="metric-row">
-              <span>Requested</span>
-              <strong id="requested-resolution">1280x720</strong>
-            </div>
-            <div class="metric-row">
-              <span>Stream Delay</span>
-              <strong id="stream-delay">0 frames</strong>
-            </div>
-            <div class="metric-row">
-              <span>Latest Frame</span>
-              <strong id="latest-frame-id">n/a</strong>
-            </div>
-            <div class="metric-row">
-              <span>Streamed Frame</span>
-              <strong id="streamed-frame-id">n/a</strong>
-            </div>
-            <div class="metric-row">
-              <span>Frame Buffer</span>
-              <strong id="frame-buffer-size">n/a</strong>
-            </div>
-          </div>
-        </section>
+          </section>
+        </aside>
       </section>
 
       <section class="card error-card" id="detection-error-card" hidden>

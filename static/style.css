@@ -24,7 +24,7 @@ body {
 }
 
 .dashboard {
-  width: min(1320px, calc(100% - 32px));
+  width: min(1680px, calc(100% - 32px));
   margin: 0 auto;
   padding: 32px 0;
 }
@@ -77,9 +77,26 @@ strong {
   color: var(--text);
 }
 
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(360px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 22px;
+}
+
+.video-section {
+  min-width: 0;
+}
+
+.side-panel {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
 .video-card {
   position: relative;
-  margin-top: 22px;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -103,7 +120,7 @@ strong {
 }
 
 .video-frame {
-  width: min(100%, 1280px);
+  width: 100%;
   aspect-ratio: 16 / 9;
   background: #05070a;
   border-radius: 16px;
@@ -120,13 +137,6 @@ strong {
 .camera-error {
   margin: 14px 4px 0;
   color: var(--danger);
-}
-
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
-  gap: 16px;
-  margin-top: 22px;
 }
 
 .counter-card,
@@ -166,8 +176,8 @@ strong {
 }
 
 .counter-metric {
-  min-height: 128px;
-  padding: 18px;
+  min-height: 96px;
+  padding: 14px;
 }
 
 .counter-metric span,
@@ -178,13 +188,13 @@ strong {
 }
 
 .counter-metric strong {
-  font-size: clamp(2.8rem, 6vw, 5rem);
+  font-size: clamp(2.4rem, 4vw, 4.2rem);
   line-height: 1;
 }
 
 .current-vehicles {
   grid-column: 1 / -1;
-  min-height: 104px;
+  min-height: 86px;
 }
 
 .metric-list {
@@ -220,13 +230,19 @@ strong {
 }
 
 .metric-row strong {
-  font-size: clamp(1.2rem, 2vw, 2rem);
+  font-size: clamp(1.05rem, 1.4vw, 1.55rem);
   overflow-wrap: anywhere;
 }
 
 .error-card {
   margin-top: 16px;
   color: var(--danger);
+}
+
+@media (max-width: 1100px) {
+  .dashboard-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 800px) {
@@ -238,14 +254,6 @@ strong {
   .status-row {
     justify-content: flex-start;
   }
-
-  .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .counter-card {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (max-width: 520px) {
@@ -254,7 +262,6 @@ strong {
     padding: 10px 0;
   }
 
-  .dashboard-grid,
   .counter-grid,
   .counter-debug {
     grid-template-columns: 1fr;
