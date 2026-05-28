@@ -1,6 +1,6 @@
 # RPI5 Street Counter
 
-RPI5 Street Counter is a local LAN web dashboard for a Raspberry Pi 5 with a USB webcam. The final project will detect cars and count vehicles crossing two road lines, but this first milestone only implements the live camera stream foundation.
+RPI5 Street Counter is a local LAN web dashboard for a Raspberry Pi 5 with a USB webcam. The final project will count vehicles crossing two road lines; the current milestone streams the camera and can draw vehicle detections.
 
 Current milestone:
 
@@ -8,8 +8,8 @@ Current milestone:
 - OpenCV USB webcam reader running in a background thread.
 - MJPEG live stream at `/video_feed`.
 - JSON status endpoint at `/api/status`.
-- Dark dashboard with FPS, CPU, RAM, temperature, and placeholder counters.
-- No object detection yet.
+- Dark dashboard with video, car counter placeholders, detection status, and Raspberry Pi stats.
+- Optional YOLO nano vehicle detection for drawing bounding boxes.
 
 ## Project Structure
 
@@ -23,7 +23,10 @@ rpi-street-counter/
     camera.py
     shared_state.py
     system_stats.py
+    detection/factory.py
     detection/base.py
+    detection/none_detector.py
+    detection/yolo_ultralytics.py
     tracking/line_counter.py
     benchmark/metrics.py
   templates/index.html
@@ -82,6 +85,37 @@ The default requested camera resolution is `1280x720` at 30 FPS with MJPEG outpu
 
 The actual resolution depends on what the USB webcam and Linux driver support, so the status API and dashboard show the applied camera resolution after OpenCV opens the device. `1920x1080` can be enabled later in `config.yaml` for benchmarking, but it is heavier and may stutter when streamed as MJPEG.
 
+## Object detection model selection
+
+Detection is configured in `config.yaml`.
+
+To disable detection:
+
+```yaml
+detection:
+  enabled: false
+  model: "none"
+```
+
+To enable YOLO nano:
+
+```yaml
+detection:
+  enabled: true
+  model: "yolo_nano"
+```
+
+Model selection happens in `src/detection/factory.py`. The default lightweight implementation is in `src/detection/opencv_dnn.py` and runs a YOLOv8 nano ONNX model through OpenCV DNN, avoiding a PyTorch runtime on the Raspberry Pi.
+
+The default YOLO model is `yolov8n.onnx`, run every 3 camera frames at input size 320. The model file is downloaded on first use to `models/yolov8n.onnx`. It detects road vehicle classes configured under `detection.classes`.
+
+If the Raspberry Pi becomes slow, reduce:
+
+- camera resolution in `config.yaml`
+- `stream.jpeg_quality`
+- `detection.input_size`
+- detection frequency by increasing `detection.run_every_n_frames`
+
 ## Deploy to Raspberry Pi
 
 The Raspberry Pi runs the actual app because the USB webcam is connected there. The Mac is used for development, GitHub, and deployment over SSH.
@@ -116,4 +150,4 @@ The deploy script is intentionally conservative: it refuses to deploy if your lo
 
 ## Notes
 
-This milestone intentionally does not include YOLO, MobileNet, tracking, line crossing, benchmarking, nginx, Docker, Tailscale, or systemd. Those parts will be added later on top of this structure.
+This milestone intentionally does not include line crossing, final counting, benchmarking, Docker, Tailscale changes, or systemd changes. Those parts will be added later on top of this structure.

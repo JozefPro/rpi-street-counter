@@ -1,8 +1,9 @@
 class BaseDetector:
-    """Placeholder interface for future object detection models."""
+    """Common detector interface used by the camera pipeline."""
 
     name = "none"
+    enabled = False
 
     def detect(self, frame):
-        # TODO: Implement YOLO/MobileNet/etc. detection in a later milestone.
+        """Return vehicle detections as dictionaries with class/confidence/bbox."""
         return []

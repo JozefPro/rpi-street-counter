@@ -1,12 +1,19 @@
 const fields = {
   activeModel: document.getElementById("active-model"),
+  activeModelCard: document.getElementById("active-model-card"),
   detectionStatus: document.getElementById("detection-status"),
+  detectionCardStatus: document.getElementById("detection-card-status"),
   fpsSummary: document.getElementById("fps-summary"),
   fps: document.getElementById("fps"),
   requestedResolution: document.getElementById("requested-resolution"),
   actualResolution: document.getElementById("actual-resolution"),
   carsLeft: document.getElementById("cars-left"),
   carsRight: document.getElementById("cars-right"),
+  visibleVehicles: document.getElementById("visible-vehicles"),
+  inferenceMs: document.getElementById("inference-ms"),
+  detectionFps: document.getElementById("detection-fps"),
+  detectionErrorCard: document.getElementById("detection-error-card"),
+  detectionError: document.getElementById("detection-error"),
   cpu: document.getElementById("cpu"),
   ram: document.getElementById("ram"),
   temperature: document.getElementById("temperature"),
@@ -41,7 +48,10 @@ async function refreshStatus() {
 
     const status = await response.json();
     fields.activeModel.textContent = status.active_model || "none";
-    fields.detectionStatus.textContent = status.detection_enabled ? "on" : "off";
+    fields.activeModelCard.textContent = status.active_model || "none";
+    const detectionText = status.detection_enabled ? "on" : "off";
+    fields.detectionStatus.textContent = detectionText;
+    fields.detectionCardStatus.textContent = detectionText;
     const measuredFps = formatNumber(status.measured_stream_fps ?? status.fps);
     fields.fpsSummary.textContent = measuredFps;
     fields.fps.textContent = measuredFps;
@@ -55,6 +65,12 @@ async function refreshStatus() {
     );
     fields.carsLeft.textContent = status.cars_left ?? 0;
     fields.carsRight.textContent = status.cars_right ?? 0;
+    fields.visibleVehicles.textContent = status.vehicle_detections_count ?? 0;
+    fields.inferenceMs.textContent =
+      status.inference_ms === null || status.inference_ms === undefined
+        ? "n/a"
+        : `${formatNumber(status.inference_ms)} ms`;
+    fields.detectionFps.textContent = formatNumber(status.detection_fps);
     fields.cpu.textContent = `${formatNumber(status.cpu_percent)}%`;
     fields.ram.textContent = `${formatNumber(status.ram_percent)}%`;
     fields.temperature.textContent =
@@ -66,6 +82,14 @@ async function refreshStatus() {
     } else {
       fields.cameraError.hidden = true;
       fields.cameraError.textContent = "";
+    }
+
+    if (status.detection_error) {
+      fields.detectionErrorCard.hidden = false;
+      fields.detectionError.textContent = status.detection_error;
+    } else {
+      fields.detectionErrorCard.hidden = true;
+      fields.detectionError.textContent = "";
     }
   } catch (error) {
     fields.cameraError.hidden = false;

@@ -122,30 +122,80 @@ strong {
   color: var(--danger);
 }
 
-.metrics-card {
+.dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 16px;
   margin-top: 22px;
+}
+
+.counter-card,
+.info-card,
+.error-card {
   padding: 18px;
 }
 
-.metric {
-  padding: 18px;
+.section-heading {
+  margin-bottom: 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.counter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.counter-metric,
+.metric-row {
   background: var(--card-soft);
   border: 1px solid var(--border);
   border-radius: 16px;
 }
 
-.metric span {
+.counter-metric {
+  min-height: 128px;
+  padding: 18px;
+}
+
+.counter-metric span,
+.metric-row span {
   display: block;
   margin-bottom: 8px;
   color: var(--muted);
 }
 
-.metric strong {
+.counter-metric strong {
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 1;
+}
+
+.current-vehicles {
+  grid-column: 1 / -1;
+  min-height: 104px;
+}
+
+.metric-list {
+  display: grid;
+  gap: 10px;
+}
+
+.metric-row {
+  padding: 13px 14px;
+}
+
+.metric-row strong {
   font-size: clamp(1.2rem, 2vw, 2rem);
   overflow-wrap: anywhere;
+}
+
+.error-card {
+  margin-top: 16px;
+  color: var(--danger);
 }
 
 @media (max-width: 800px) {
@@ -158,8 +208,12 @@ strong {
     justify-content: flex-start;
   }
 
-  .metrics-card {
+  .dashboard-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .counter-card {
+    grid-column: 1 / -1;
   }
 }
 
@@ -169,7 +223,12 @@ strong {
     padding: 10px 0;
   }
 
-  .metrics-card {
+  .dashboard-grid,
+  .counter-grid {
     grid-template-columns: 1fr;
+  }
+
+  .current-vehicles {
+    grid-column: auto;
   }
 }

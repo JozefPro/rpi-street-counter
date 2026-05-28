@@ -15,5 +15,23 @@ stream:
   jpeg_quality: 70
   max_stream_fps: 15
 
+detection:
+  enabled: true
+  model: "yolo_nano"
+  confidence_threshold: 0.35
+  classes:
+    - car
+    - truck
+    - bus
+    - motorcycle
+  run_every_n_frames: 3
+  input_size: 320
+
+models:
+  yolo_nano:
+    type: "opencv_dnn_yolo"
+    weights: "models/yolov8n.onnx"
+    url: "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8n.onnx"
+
 project:
   name: "RPI5 Street Counter"

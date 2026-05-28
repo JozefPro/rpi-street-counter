@@ -28,38 +28,88 @@
         <p id="camera-error" class="camera-error" hidden></p>
       </section>
 
-      <section class="card metrics-card">
-        <div class="metric">
-          <span>Requested</span>
-          <strong id="requested-resolution">1280x720</strong>
-        </div>
-        <div class="metric">
-          <span>Actual Camera</span>
-          <strong id="actual-resolution">n/a</strong>
-        </div>
-        <div class="metric">
-          <span>Stream FPS</span>
-          <strong id="fps">0.0</strong>
-        </div>
-        <div class="metric">
-          <span>Cars Left</span>
-          <strong id="cars-left">0</strong>
-        </div>
-        <div class="metric">
-          <span>Cars Right</span>
-          <strong id="cars-right">0</strong>
-        </div>
-        <div class="metric">
-          <span>CPU</span>
-          <strong id="cpu">0%</strong>
-        </div>
-        <div class="metric">
-          <span>RAM</span>
-          <strong id="ram">0%</strong>
-        </div>
-        <div class="metric">
-          <span>Temp</span>
-          <strong id="temperature">n/a</strong>
+      <section class="dashboard-grid">
+        <section class="card counter-card">
+          <div class="section-heading">
+            <span>Vehicle Counters</span>
+          </div>
+          <div class="counter-grid">
+            <div class="counter-metric">
+              <span>Cars Left</span>
+              <strong id="cars-left">0</strong>
+            </div>
+            <div class="counter-metric">
+              <span>Cars Right</span>
+              <strong id="cars-right">0</strong>
+            </div>
+            <div class="counter-metric current-vehicles">
+              <span>Visible Vehicles</span>
+              <strong id="visible-vehicles">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="card info-card">
+          <div class="section-heading">
+            <span>Detection</span>
+          </div>
+          <div class="metric-list">
+            <div class="metric-row">
+              <span>Status</span>
+              <strong id="detection-card-status">off</strong>
+            </div>
+            <div class="metric-row">
+              <span>Active Model</span>
+              <strong id="active-model-card">none</strong>
+            </div>
+            <div class="metric-row">
+              <span>Inference</span>
+              <strong id="inference-ms">n/a</strong>
+            </div>
+            <div class="metric-row">
+              <span>Detection FPS</span>
+              <strong id="detection-fps">0.0</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="card info-card stats-card">
+          <div class="section-heading">
+            <span>Raspberry Pi</span>
+          </div>
+          <div class="metric-list">
+            <div class="metric-row">
+              <span>CPU</span>
+              <strong id="cpu">0%</strong>
+            </div>
+            <div class="metric-row">
+              <span>RAM</span>
+              <strong id="ram">0%</strong>
+            </div>
+            <div class="metric-row">
+              <span>Temperature</span>
+              <strong id="temperature">n/a</strong>
+            </div>
+            <div class="metric-row">
+              <span>Stream FPS</span>
+              <strong id="fps">0.0</strong>
+            </div>
+            <div class="metric-row">
+              <span>Camera</span>
+              <strong id="actual-resolution">n/a</strong>
+            </div>
+            <div class="metric-row">
+              <span>Requested</span>
+              <strong id="requested-resolution">1280x720</strong>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="card error-card" id="detection-error-card" hidden>
+        <div class="metric-row">
+          <span>Detection Error</span>
+          <strong id="detection-error"></strong>
         </div>
       </section>
     </main>

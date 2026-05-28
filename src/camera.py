@@ -16,6 +16,9 @@ class CameraReader:
         target_fps=30,
         jpeg_quality=70,
         max_stream_fps=15,
+        detector=None,
+        detection_enabled=False,
+        detection_run_every_n_frames=3,
     ):
         self.index = index
         self.width = width
@@ -23,10 +26,14 @@ class CameraReader:
         self.target_fps = target_fps
         self.jpeg_quality = jpeg_quality
         self.max_stream_fps = max(1, int(max_stream_fps))
+        self.detector = detector
+        self.detection_enabled = bool(detection_enabled and detector and detector.enabled)
+        self.detection_run_every_n_frames = max(1, int(detection_run_every_n_frames))
 
         self._capture = None
         self._frame = None
         self._jpeg_frame = None
+        self._detections = []
         self._lock = threading.Lock()
         self._start_lock = threading.Lock()
         self._thread = None
@@ -38,6 +45,11 @@ class CameraReader:
         self.actual_width = None
         self.actual_height = None
         self.actual_camera_fps = None
+        self.active_model = detector.name if detector else "none"
+        self.inference_ms = None
+        self.detection_fps = 0.0
+        self.vehicle_detections_count = 0
+        self.detection_error = None
         self.error = None
         self.running = False
 
@@ -86,6 +98,8 @@ class CameraReader:
         self.running = True
         frames = 0
         encoded_frames = 0
+        detected_frames = 0
+        frame_number = 0
         last_fps_time = time.monotonic()
         next_encode_time = 0.0
         stream_interval = 1.0 / self.max_stream_fps
@@ -101,12 +115,17 @@ class CameraReader:
             with self._lock:
                 self._frame = frame
 
+            frame_number += 1
+            if self.detection_enabled and frame_number % self.detection_run_every_n_frames == 0:
+                self._run_detection(frame)
+                detected_frames += 1
+
             now = time.monotonic()
             if next_encode_time == 0.0:
                 next_encode_time = now
 
             if now >= next_encode_time:
-                jpeg_frame = self._encode_frame(frame)
+                jpeg_frame = self._encode_frame(self._draw_detections(frame))
                 if jpeg_frame is not None:
                     with self._lock:
                         self._jpeg_frame = jpeg_frame
@@ -120,9 +139,11 @@ class CameraReader:
             if elapsed >= 1.0:
                 self.camera_fps = round(frames / elapsed, 1)
                 self.stream_fps = round(encoded_frames / elapsed, 1)
+                self.detection_fps = round(detected_frames / elapsed, 1)
                 self.fps = self.stream_fps
                 frames = 0
                 encoded_frames = 0
+                detected_frames = 0
                 last_fps_time = now
 
         self._capture.release()
@@ -140,6 +161,51 @@ class CameraReader:
                 return self._jpeg_frame
 
         return self._encode_frame(self._placeholder_frame())
+
+    def _run_detection(self, frame):
+        started_at = time.monotonic()
+        try:
+            detections = self.detector.detect(frame)
+        except Exception as exc:
+            self.detection_error = str(exc)
+            print(f"Detection error: {exc}", flush=True)
+            return
+
+        elapsed_ms = (time.monotonic() - started_at) * 1000
+        with self._lock:
+            self._detections = detections
+
+        self.inference_ms = round(elapsed_ms, 1)
+        self.vehicle_detections_count = len(detections)
+        self.detection_error = None
+
+    def _draw_detections(self, frame):
+        with self._lock:
+            detections = list(self._detections)
+
+        if not detections:
+            return frame
+
+        annotated = frame.copy()
+        for detection in detections:
+            x1, y1, x2, y2 = detection["bbox"]
+            class_name = detection["class_name"]
+            confidence = detection["confidence"]
+            label = f"{class_name} {confidence:.2f}"
+
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), (57, 208, 163), 2)
+            cv2.putText(
+                annotated,
+                label,
+                (x1, max(20, y1 - 8)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.6,
+                (57, 208, 163),
+                2,
+                cv2.LINE_AA,
+            )
+
+        return annotated
 
     def _encode_frame(self, frame):
         encode_params = [int(cv2.IMWRITE_JPEG_QUALITY), int(self.jpeg_quality)]

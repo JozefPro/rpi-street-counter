@@ -5,3 +5,5 @@ __pycache__/
 .DS_Store
 app.log
 app.pid
+models/*.onnx
+models/*.pt

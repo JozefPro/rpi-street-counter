@@ -6,6 +6,7 @@ import yaml
 from flask import Flask, Response, jsonify, render_template
 
 from src.camera import CameraReader
+from src.detection import create_detector
 from src.shared_state import SharedState
 from src.system_stats import get_system_stats
 
@@ -14,6 +15,21 @@ DEFAULT_CONFIG = {
     "camera": {"index": 0, "width": 1280, "height": 720, "fps": 30},
     "server": {"host": "0.0.0.0", "port": 5000, "debug": False},
     "stream": {"jpeg_quality": 70, "max_stream_fps": 15},
+    "detection": {
+        "enabled": True,
+        "model": "yolo_nano",
+        "confidence_threshold": 0.35,
+        "classes": ["car", "truck", "bus", "motorcycle"],
+        "run_every_n_frames": 3,
+        "input_size": 320,
+    },
+    "models": {
+        "yolo_nano": {
+            "type": "opencv_dnn_yolo",
+            "weights": "models/yolov8n.onnx",
+            "url": "https://github.com/ultralytics/assets/releases/download/v8.4.0/yolov8n.onnx",
+        },
+    },
     "project": {"name": "RPI5 Street Counter"},
 }
 
@@ -36,6 +52,7 @@ def load_config(path="config.yaml"):
 
 config = load_config()
 shared_state = SharedState()
+detector = create_detector(config)
 camera = CameraReader(
     index=config["camera"]["index"],
     width=config["camera"]["width"],
@@ -43,6 +60,9 @@ camera = CameraReader(
     target_fps=config["camera"]["fps"],
     jpeg_quality=config["stream"]["jpeg_quality"],
     max_stream_fps=config["stream"]["max_stream_fps"],
+    detector=detector,
+    detection_enabled=config["detection"]["enabled"],
+    detection_run_every_n_frames=config["detection"]["run_every_n_frames"],
 )
 
 app = Flask(__name__)
@@ -107,6 +127,12 @@ def api_status():
             "jpeg_quality": camera.jpeg_quality,
             "fps": camera.stream_fps,
             "camera_running": camera.running,
+            "detection_enabled": camera.detection_enabled,
+            "active_model": camera.active_model,
+            "inference_ms": camera.inference_ms,
+            "detection_fps": camera.detection_fps,
+            "vehicle_detections_count": camera.vehicle_detections_count,
+            "detection_error": camera.detection_error,
         }
     )
 
