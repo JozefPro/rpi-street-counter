@@ -34,21 +34,31 @@ DEFAULT_CONFIG = {
     "counting": {
         "enabled": True,
         "draw_lines": True,
+        "label_offset_px": [-28, -14],
         "line_a": {
             "name": "A",
-            "p1_norm": [0.36, 0.58],
-            "p2_norm": [0.62, 0.39],
+            "p1_norm": [0.32, 0.66],
+            "p2_norm": [0.62, 0.43],
             "color": [0, 0, 255],
         },
         "line_b": {
             "name": "B",
-            "p1_norm": [0.75, 0.89],
-            "p2_norm": [0.96, 0.65],
+            "p1_norm": [0.56, 0.82],
+            "p2_norm": [0.86, 0.59],
             "color": [0, 0, 255],
         },
         "sequence_a_then_b": "left",
         "sequence_b_then_a": "right",
-        "max_track_age_seconds": 3.0,
+        "max_track_age_seconds": 5.0,
+    },
+    "tracking": {
+        "max_distance_px": 160,
+        "max_age_seconds": 5.0,
+    },
+    "debug": {
+        "draw_track_centers": True,
+        "draw_track_ids": True,
+        "draw_movement_segments": False,
     },
     "project": {"name": "RPI5 Street Counter"},
 }
@@ -73,7 +83,12 @@ def load_config(path="config.yaml"):
 config = load_config()
 shared_state = SharedState()
 detector = create_detector(config)
-line_counter = LineCounter(config.get("counting", {}), config["detection"].get("classes", []))
+line_counter = LineCounter(
+    config.get("counting", {}),
+    config["detection"].get("classes", []),
+    tracking_config=config.get("tracking", {}),
+    debug_config=config.get("debug", {}),
+)
 camera = CameraReader(
     index=config["camera"]["index"],
     width=config["camera"]["width"],
@@ -171,6 +186,10 @@ def api_status():
             "line_b": camera.line_b,
             "active_tracks": camera.active_tracks,
             "latest_crossing_event": camera.latest_crossing_event,
+            "line_a_crossings_seen": camera.line_a_crossings_seen,
+            "line_b_crossings_seen": camera.line_b_crossings_seen,
+            "tracks_waiting_for_second_line": camera.tracks_waiting_for_second_line,
+            "track_id_switches": camera.track_id_switches,
         }
     )
 

@@ -71,6 +71,10 @@ class CameraReader:
         self.total_counted = 0
         self.active_tracks = 0
         self.latest_crossing_event = None
+        self.line_a_crossings_seen = 0
+        self.line_b_crossings_seen = 0
+        self.tracks_waiting_for_second_line = 0
+        self.track_id_switches = 0
         initial_counter_state = line_counter.to_status() if line_counter else {}
         self.line_a = initial_counter_state.get("line_a")
         self.line_b = initial_counter_state.get("line_b")
@@ -326,6 +330,10 @@ class CameraReader:
         self.latest_crossing_event = state["latest_crossing_event"]
         self.line_a = state["line_a"]
         self.line_b = state["line_b"]
+        self.line_a_crossings_seen = state["line_a_crossings_seen"]
+        self.line_b_crossings_seen = state["line_b_crossings_seen"]
+        self.tracks_waiting_for_second_line = state["tracks_waiting_for_second_line"]
+        self.track_id_switches = state["track_id_switches"]
 
     def _draw_counting_lines(self, frame):
         if not self.line_counter:

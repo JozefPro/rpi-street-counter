@@ -12,6 +12,8 @@ const fields = {
   visibleVehicles: document.getElementById("visible-vehicles"),
   totalCounted: document.getElementById("total-counted"),
   latestCrossingEvent: document.getElementById("latest-crossing-event"),
+  waitingSecondLine: document.getElementById("waiting-second-line"),
+  lineCrossings: document.getElementById("line-crossings"),
   inferenceMs: document.getElementById("inference-ms"),
   detectionFps: document.getElementById("detection-fps"),
   detectionFrameId: document.getElementById("detection-frame-id"),
@@ -79,6 +81,9 @@ async function refreshStatus() {
     fields.visibleVehicles.textContent = status.vehicle_detections_count ?? 0;
     fields.totalCounted.textContent = status.total_counted ?? 0;
     fields.latestCrossingEvent.textContent = status.latest_crossing_event || "none";
+    fields.waitingSecondLine.textContent = status.tracks_waiting_for_second_line ?? 0;
+    fields.lineCrossings.textContent =
+      `${status.line_a_crossings_seen ?? 0} / ${status.line_b_crossings_seen ?? 0}`;
     fields.inferenceMs.textContent =
       status.inference_ms === null || status.inference_ms === undefined
         ? "n/a"

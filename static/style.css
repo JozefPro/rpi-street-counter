@@ -185,6 +185,13 @@ strong {
   gap: 10px;
 }
 
+.counter-debug {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .metric-row {
   padding: 13px 14px;
 }
@@ -241,7 +248,8 @@ strong {
   }
 
   .dashboard-grid,
-  .counter-grid {
+  .counter-grid,
+  .counter-debug {
     grid-template-columns: 1fr;
   }
 

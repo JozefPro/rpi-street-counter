@@ -140,12 +140,13 @@ Each line is a two-point diagonal segment using normalized coordinates from `0.0
 counting:
   enabled: true
   draw_lines: true
+  label_offset_px: [-28, -14]
   line_a:
-    p1_norm: [0.36, 0.58]
-    p2_norm: [0.62, 0.39]
+    p1_norm: [0.32, 0.66]
+    p2_norm: [0.62, 0.43]
   line_b:
-    p1_norm: [0.75, 0.89]
-    p2_norm: [0.96, 0.65]
+    p1_norm: [0.56, 0.82]
+    p2_norm: [0.86, 0.59]
 ```
 
 `p1_norm` and `p2_norm` define the endpoints of each diagonal line. The app converts them to pixel coordinates for the current frame size and draws labels `A` and `B` on the stream.
@@ -163,6 +164,23 @@ sequence_b_then_a: "right"
 ```
 
 If your count direction is reversed, swap those two values. The first tracker is intentionally simple: it matches detections by nearest bounding-box center and expires tracks after `max_track_age_seconds`.
+
+## Counting line tuning
+
+If cars are missed, tune the line and tracker values in `config.yaml`.
+
+Move the lines toward the center of the road when vehicles are detected too late or disappear before crossing the second line. Increase `counting.max_track_age_seconds` if tracks disappear too quickly. Increase `tracking.max_distance_px` if track IDs change too often between detector updates.
+
+Debug drawing can help show what the tracker is doing:
+
+```yaml
+debug:
+  draw_track_centers: true
+  draw_track_ids: true
+  draw_movement_segments: false
+```
+
+`draw_track_centers` and `draw_track_ids` are useful during tuning. `draw_movement_segments` is noisier, but it can show whether a track movement segment actually intersects a counting line.
 
 ## Deploy to Raspberry Pi
 
