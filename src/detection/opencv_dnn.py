@@ -37,6 +37,8 @@ class OpenCVDnnYoloDetector(BaseDetector):
         self.input_size = int(input_size)
         self.input_width = int(input_width or input_size)
         self.input_height = int(input_height or input_size)
+        self.effective_input_width = self.input_width
+        self.effective_input_height = self.input_height
         self._net = None
         self._shape_fallback_logged = False
 
@@ -60,14 +62,14 @@ class OpenCVDnnYoloDetector(BaseDetector):
         self._load_model()
 
         frame_height, frame_width = frame.shape[:2]
-        blob = self._make_blob(frame, self.input_width, self.input_height)
+        blob = self._make_blob(frame, self.effective_input_width, self.effective_input_height)
         self._net.setInput(blob)
         try:
             output = self._net.forward()
-            model_input_width = self.input_width
-            model_input_height = self.input_height
+            model_input_width = self.effective_input_width
+            model_input_height = self.effective_input_height
         except cv2.error:
-            if self.input_width == self.input_size and self.input_height == self.input_size:
+            if self.effective_input_width == self.input_size and self.effective_input_height == self.input_size:
                 raise
 
             if not self._shape_fallback_logged:
@@ -79,6 +81,8 @@ class OpenCVDnnYoloDetector(BaseDetector):
                 )
                 self._shape_fallback_logged = True
 
+            self.effective_input_width = self.input_size
+            self.effective_input_height = self.input_size
             blob = self._make_blob(frame, self.input_size, self.input_size)
             self._net.setInput(blob)
             output = self._net.forward()

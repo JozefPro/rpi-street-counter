@@ -115,7 +115,7 @@ async function refreshStatus() {
     fields.inferenceSize.textContent = formatResolution(
       status.inference_frame_width ?? status.inference_width,
       status.inference_frame_height ?? status.inference_height,
-    );
+    ) + ` / ${formatResolution(status.model_input_width, status.model_input_height)}`;
     fields.detectionFps.textContent = formatNumber(status.detection_fps);
     fields.detectionFrameId.textContent = status.detection_frame_id ?? "n/a";
     fields.boxesDrawnCount.textContent = status.boxes_drawn_count ?? 0;

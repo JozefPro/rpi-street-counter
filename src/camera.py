@@ -71,6 +71,8 @@ class CameraReader:
         self.inference_ms = None
         self.inference_frame_width = None
         self.inference_frame_height = None
+        self.model_input_width = None
+        self.model_input_height = None
         self.detection_fps = 0.0
         self.vehicle_detections_count = 0
         self.boxes_drawn_count = 0
@@ -318,6 +320,8 @@ class CameraReader:
         self.inference_ms = round(elapsed_ms, 1)
         self.inference_frame_width = inference_frame.shape[1]
         self.inference_frame_height = inference_frame.shape[0]
+        self.model_input_width = getattr(self.detector, "effective_input_width", self.inference_frame_width)
+        self.model_input_height = getattr(self.detector, "effective_input_height", self.inference_frame_height)
         self.vehicle_detections_count = len(detections)
         self.detection_frame_id = frame_id
         self.detection_error = None
@@ -500,6 +504,7 @@ class CameraReader:
             f"camera_fps={self.camera_fps} "
             f"stream_fps={self.stream_fps} "
             f"inference={self.inference_frame_width}x{self.inference_frame_height} "
+            f"model_input={self.model_input_width}x{self.model_input_height} "
             f"inference_ms={self.inference_ms}",
             flush=True,
         )

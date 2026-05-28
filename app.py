@@ -186,6 +186,8 @@ def api_status():
             "inference_height": camera.inference_height,
             "inference_frame_width": camera.inference_frame_width,
             "inference_frame_height": camera.inference_frame_height,
+            "model_input_width": camera.model_input_width,
+            "model_input_height": camera.model_input_height,
             "detection_run_every_n_frames": camera.detection_run_every_n_frames,
             "detection_fps": camera.detection_fps,
             "vehicle_detections_count": camera.vehicle_detections_count,
